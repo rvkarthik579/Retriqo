@@ -82,7 +82,7 @@ export default function PinEntry({ onSubmit, error, locked, lockSecondsRemaining
       </div>
 
       <div style={{ textAlign: 'center' }}>
-        <h2 className="font-syne" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>
+        <h2 className="font-geist" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>
           PIN Required
         </h2>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>

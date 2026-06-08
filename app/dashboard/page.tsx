@@ -98,7 +98,7 @@ export default function DashboardPage() {
         marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid var(--border)'
       }}>
         <div>
-          <h1 className="font-syne" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>
+          <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>
             Dashboard
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
@@ -133,11 +133,11 @@ export default function DashboardPage() {
       {/* Projects */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 className="font-syne" style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+          <h2 className="font-geist" style={{ fontSize: '1.1rem', fontWeight: 600 }}>
             Your Projects
           </h2>
           <span style={{ 
-            fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', 
+            fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', 
             color: 'var(--text-muted)',
             background: 'var(--bg-hover)',
             padding: '4px 10px', borderRadius: 20
@@ -175,7 +175,7 @@ export default function DashboardPage() {
               <IconFolder size={36} color="var(--accent-light)" />
             </div>
             <div>
-              <h3 className="font-syne" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>
+              <h3 className="font-geist" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>
                 No projects yet
               </h3>
               <p style={{ color: 'var(--text-secondary)', maxWidth: 400, lineHeight: 1.7 }}>

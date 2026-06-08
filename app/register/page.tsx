@@ -73,7 +73,7 @@ export default function RegisterPage() {
           }}>
             <IconCheck size={32} color="var(--success)" />
           </div>
-          <h1 className="font-syne text-2xl font-bold mb-3">Check your email</h1>
+          <h1 className="font-geist text-2xl font-bold mb-3">Check your email</h1>
           <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
             We sent a confirmation link to <strong style={{ color: 'var(--text-primary)' }}>{email}</strong>. 
             Click it to activate your account.
@@ -101,13 +101,13 @@ export default function RegisterPage() {
           }}>
             <IconQrcode size={22} color="white" />
           </div>
-          <span className="font-syne text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <span className="font-geist text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             Project QR
           </span>
         </div>
 
         <div className="card" style={{ padding: '40px' }}>
-          <h1 className="font-syne text-2xl font-bold mb-2">Create your account</h1>
+          <h1 className="font-geist text-2xl font-bold mb-2">Create your account</h1>
           <p className="mb-8" style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
             Start managing industrial assets digitally
           </p>
@@ -125,7 +125,7 @@ export default function RegisterPage() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>or</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>or</span>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
 
@@ -200,7 +200,7 @@ export default function RegisterPage() {
                     { label: 'Number', met: /[0-9]/.test(password) },
                   ].map(r => (
                     <span key={r.label} style={{
-                      fontFamily: 'DM Mono, monospace',
+                      fontFamily: 'JetBrains Mono, monospace',
                       fontSize: '0.7rem',
                       padding: '2px 8px',
                       borderRadius: 4,

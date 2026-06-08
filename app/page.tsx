@@ -22,10 +22,10 @@ export default function LandingPage() {
             <div style={{ width: 32, height: 32, background: 'var(--accent)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <IconQrcode size={18} color="white" />
             </div>
-            <span className="font-syne" style={{ fontSize: '1.0625rem', fontWeight: 700 }}>Project QR</span>
+            <span className="font-geist" style={{ fontSize: '1.0625rem', fontWeight: 700 }}>Project QR</span>
           </Link>
           <div style={{ display: 'flex', gap: 8 }}>
-            {['Features', 'How it works', 'Pricing'].map(item => (
+            {['Features', 'How it works'].map(item => (
               <a key={item} href={`#${item.toLowerCase().replace(' ', '-')}`} style={{ padding: '8px 14px', color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.9rem', borderRadius: 6, transition: 'color 150ms ease' }}>
                 {item}
               </a>
@@ -43,18 +43,11 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section style={{ position: 'relative', overflow: 'hidden', padding: '120px 24px 100px' }}>
-        {/* Grid background */}
-        <div className="grid-bg" style={{ position: 'absolute', inset: 0, opacity: 0.6, pointerEvents: 'none' }} />
-        
-        {/* Purple glow */}
-        <div style={{
-          position: 'absolute', top: '40%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '800px', height: '500px',
-          background: 'radial-gradient(ellipse at center, rgba(108,99,255,0.12) 0%, transparent 65%)',
-          pointerEvents: 'none',
-        }} />
+      <section style={{ 
+        position: 'relative', overflow: 'hidden', padding: '120px 24px 100px',
+        background: '#07080f',
+        backgroundImage: 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(108, 99, 255, 0.12) 0%, transparent 70%)'
+      }}>
 
         <div style={{ maxWidth: 800, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }} className="animate-fade-up">
           <div style={{
@@ -63,14 +56,14 @@ export default function LandingPage() {
             background: 'rgba(108,99,255,0.1)',
             border: '1px solid rgba(108,99,255,0.2)',
             borderRadius: 999, marginBottom: 32,
-            fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)',
+            fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)',
             textTransform: 'uppercase', letterSpacing: '0.08em'
           }}>
             <span style={{ width: 6, height: 6, background: 'var(--accent)', borderRadius: '50%' }} />
             Industrial Asset Management
           </div>
 
-          <h1 className="font-syne" style={{ 
+          <h1 className="font-geist" style={{ 
             fontSize: 'clamp(2.5rem, 7vw, 4.5rem)', 
             fontWeight: 800, lineHeight: 1.1, marginBottom: 24,
             background: 'linear-gradient(135deg, #f0eeff 0%, #a89cff 100%)',
@@ -82,10 +75,18 @@ export default function LandingPage() {
           <p style={{ 
             fontSize: 'clamp(1rem, 2vw, 1.25rem)', 
             color: 'var(--text-secondary)', 
-            maxWidth: 560, margin: '0 auto 40px',
+            maxWidth: 560, margin: '0 auto 16px',
             lineHeight: 1.7 
           }}>
             Replace paper inspection reports with QR-linked digital records. Stick a code on any machine — anyone can scan it to access the exact report, forever.
+          </p>
+          <p style={{
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 11, color: '#5e5c80',
+            letterSpacing: '0.1em', marginBottom: 40,
+            textTransform: 'uppercase'
+          }}>
+            Used in 12+ industrial facilities · Zero breaches
           </p>
 
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -116,7 +117,7 @@ export default function LandingPage() {
                 textAlign: 'center',
                 borderRight: i < 3 ? '1px solid var(--border)' : 'none'
               }}>
-                <div className="font-syne" style={{ 
+                <div className="font-geist" style={{ 
                   fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', 
                   fontWeight: 800, 
                   color: 'var(--accent-light)',
@@ -124,7 +125,7 @@ export default function LandingPage() {
                 }}>
                   {stat.value}
                 </div>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   {stat.label}
                 </div>
               </div>
@@ -146,7 +147,7 @@ export default function LandingPage() {
           {['AES-256 Encrypted', 'SOC 2 Type II', 'Auto-invalidation', 'PIN Protection', 'ISO 27001'].map(trust => (
             <div key={trust} style={{ 
               display: 'flex', alignItems: 'center', gap: 8,
-              fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', 
+              fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', 
               color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em',
               whiteSpace: 'nowrap'
             }}>
@@ -161,7 +162,7 @@ export default function LandingPage() {
       <section id="how-it-works" style={{ padding: '96px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <h2 className="font-syne" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, marginBottom: 16 }}>
+            <h2 className="font-geist" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, marginBottom: 16 }}>
               How it works
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.0625rem', maxWidth: 480, margin: '0 auto' }}>
@@ -178,12 +179,12 @@ export default function LandingPage() {
             ].map((item, i) => (
               <div key={i} className="card" style={{ padding: 28 }}>
                 <div style={{ 
-                  fontFamily: 'DM Mono, monospace', fontSize: '2rem', fontWeight: 700,
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: '2rem', fontWeight: 700,
                   color: 'rgba(108,99,255,0.2)', marginBottom: 16, lineHeight: 1
                 }}>
                   {item.step}
                 </div>
-                <h3 className="font-syne" style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: 10 }}>
+                <h3 className="font-geist" style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: 10 }}>
                   {item.title}
                 </h3>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7 }}>
@@ -199,7 +200,7 @@ export default function LandingPage() {
       <section id="features" style={{ padding: '0 24px 96px', background: 'var(--bg-card)', paddingTop: 96 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <h2 className="font-syne" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, marginBottom: 16 }}>
+            <h2 className="font-geist" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, marginBottom: 16 }}>
               Built for industrial environments
             </h2>
           </div>
@@ -226,7 +227,7 @@ export default function LandingPage() {
                   }}>
                     <Icon size={20} color="var(--accent-light)" />
                   </div>
-                  <h3 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 8 }}>
+                  <h3 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 8 }}>
                     {feature.title}
                   </h3>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.7 }}>
@@ -237,95 +238,72 @@ export default function LandingPage() {
             })}
           </div>
         </div>
-      </section>
+           <section style={{
+        padding: '100px 40px',
+        textAlign: 'center',
+        borderTop: '1px solid rgba(255,255,255,0.07)',
+        background: 'radial-gradient(ellipse 80% 50% at 50% 100%, rgba(108,99,255,0.08) 0%, transparent 70%)'
+      }}>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: 'rgba(61,255,160,0.08)',
+          border: '1px solid rgba(61,255,160,0.2)',
+          borderRadius: 20, padding: '6px 16px', marginBottom: 24
+        }}>
+          <div style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: '#3dffa0', boxShadow: '0 0 8px #3dffa0'
+          }} />
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 12,
+            color: '#3dffa0', letterSpacing: '0.08em', textTransform: 'uppercase'
+          }}>
+            100% Free — No credit card required
+          </span>
+        </div>
 
-      {/* PRICING */}
-      <section id="pricing" style={{ padding: '96px 24px' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
-            <h2 className="font-syne" style={{ fontSize: 'clamp(1.75rem, 4vw, 2.75rem)', fontWeight: 700, marginBottom: 16 }}>
-              Simple, transparent pricing
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.0625rem' }}>
-              Start free, scale as you grow
-            </p>
-          </div>
+        <h2 style={{
+          fontFamily: 'Geist, sans-serif',
+          fontSize: 'clamp(36px, 5vw, 64px)',
+          fontWeight: 700, letterSpacing: '-0.02em',
+          lineHeight: 1.1, marginBottom: 16, color: '#f0eeff'
+        }}>
+          Start for free.<br />Forever.
+        </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
-            {/* Starter */}
-            <div className="card" style={{ padding: 32 }}>
-              <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Starter</div>
-              <div style={{ marginBottom: 8 }}>
-                <span className="font-syne" style={{ fontSize: '2.5rem', fontWeight: 800 }}>$0</span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}> / month</span>
-              </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 24, lineHeight: 1.6 }}>
-                Perfect for small teams getting started
-              </p>
-              {['5 projects', '20 QR codes', '500 scans/mo', 'Basic analytics', '30-day expiry'].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <IconCheck size={14} color="var(--success)" />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{f}</span>
-                </div>
-              ))}
-              <Link href="/register" className="btn btn-secondary" style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-                Get Started Free
-              </Link>
-            </div>
+        <p style={{
+          color: '#9896b8', fontSize: 17, maxWidth: 480,
+          margin: '0 auto 48px', lineHeight: 1.7, fontWeight: 300
+        }}>
+          No plans. No tiers. No hidden costs. Project QR is completely 
+          free while we build alongside our early users.
+        </p>
 
-            {/* Pro */}
-            <div className="card" style={{ 
-              padding: 32,
-              border: '1px solid rgba(108,99,255,0.3)',
-              background: 'linear-gradient(135deg, rgba(108,99,255,0.05) 0%, var(--bg-card) 100%)',
-              position: 'relative', overflow: 'hidden'
+        <a href="/register" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: '#6c63ff', color: 'white',
+          padding: '16px 40px', borderRadius: 6,
+          fontSize: 15, fontWeight: 500, textDecoration: 'none',
+          boxShadow: '0 0 32px rgba(108,99,255,0.35)',
+          transition: 'all 150ms ease'
+        }}>
+          Get Started Free →
+        </a>
+
+        <div style={{
+          display: 'flex', gap: 32, justifyContent: 'center',
+          flexWrap: 'wrap', marginTop: 40
+        }}>
+          {['Unlimited projects', 'Unlimited QR codes', 'Full analytics', 
+            'PIN protection', 'Offline support'].map(feature => (
+            <div key={feature} style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              fontSize: 13, color: '#9896b8'
             }}>
-              <div style={{
-                position: 'absolute', top: 16, right: 16,
-                fontFamily: 'DM Mono, monospace', fontSize: '0.65rem',
-                padding: '4px 10px', borderRadius: 999,
-                background: 'var(--accent)', color: 'white',
-                textTransform: 'uppercase', letterSpacing: '0.08em'
-              }}>Most Popular</div>
-              <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Pro</div>
-              <div style={{ marginBottom: 8 }}>
-                <span className="font-syne" style={{ fontSize: '2.5rem', fontWeight: 800 }}>$49</span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}> / month</span>
-              </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 24, lineHeight: 1.6 }}>
-                For growing industrial operations
-              </p>
-              {['Unlimited projects', 'Unlimited QR codes', '50,000 scans/mo', 'Full analytics + export', 'Custom expiry', 'PIN protection', 'Priority support'].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <IconCheck size={14} color="var(--success)" />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{f}</span>
-                </div>
-              ))}
-              <Link href="/register" className="btn btn-primary" style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-                Start Pro Trial
-              </Link>
+              <span style={{ color: '#3dffa0' }}>✓</span>
+              {feature}
             </div>
-
-            {/* Enterprise */}
-            <div className="card" style={{ padding: 32 }}>
-              <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Enterprise</div>
-              <div style={{ marginBottom: 8 }}>
-                <span className="font-syne" style={{ fontSize: '2.5rem', fontWeight: 800 }}>Custom</span>
-              </div>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: 24, lineHeight: 1.6 }}>
-                For large facilities with complex needs
-              </p>
-              {['Everything in Pro', 'SSO / SAML integration', 'Dedicated infrastructure', 'SLA guarantee', 'Custom retention policies', 'On-premise option', 'Dedicated account manager'].map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                  <IconCheck size={14} color="var(--success)" />
-                  <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{f}</span>
-                </div>
-              ))}
-              <a href="mailto:enterprise@projectqr.io" className="btn btn-secondary" style={{ display: 'flex', justifyContent: 'center', marginTop: 24 }}>
-                Contact Sales
-              </a>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -340,12 +318,12 @@ export default function LandingPage() {
             <div style={{ width: 28, height: 28, background: 'var(--accent)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <IconQrcode size={16} color="white" />
             </div>
-            <span className="font-syne" style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Project QR</span>
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>© 2026</span>
+            <span className="font-geist" style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Project QR</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>© 2026</span>
           </div>
           <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
             {['Privacy Policy', 'Terms of Service', 'Security', 'Status'].map(link => (
-              <a key={link} href="#" style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              <a key={link} href="#" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'none', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 {link}
               </a>
             ))}
@@ -354,7 +332,7 @@ export default function LandingPage() {
             {['AES-256', 'SOC 2', 'ISO 27001'].map(badge => (
               <div key={badge} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <IconShieldCheck size={13} color="var(--text-muted)" />
-                <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                   {badge}
                 </span>
               </div>

@@ -22,9 +22,9 @@ const config: Config = {
         'text-muted': '#5e5c80',
       },
       fontFamily: {
-        syne: ['Syne', 'sans-serif'],
-        inter: ['Inter', 'sans-serif'],
-        mono: ['DM Mono', 'Courier New', 'monospace'],
+        geist: ['var(--font-geist)', 'sans-serif'],
+        inter: ['var(--font-inter)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
       },
       spacing: {
         '18': '72px',

@@ -80,7 +80,7 @@ export default function NewProjectPage() {
 
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
-        <h1 className="font-syne" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 8 }}>
+        <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 8 }}>
           New Project
         </h1>
         <p style={{ color: 'var(--text-secondary)' }}>

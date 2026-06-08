@@ -61,7 +61,7 @@ export default function Sidebar({ user, deviceCount = 0 }: SidebarProps) {
           }}>
             <IconQrcode size={18} color="white" />
           </div>
-          <span className="font-syne font-bold" style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>
+          <span className="font-geist font-bold" style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>
             Project QR
           </span>
         </Link>
@@ -83,7 +83,7 @@ export default function Sidebar({ user, deviceCount = 0 }: SidebarProps) {
               <span style={{ fontSize: '0.9rem', flex: 1 }}>{item.label}</span>
               {item.href === '/dashboard/analytics' && deviceCount > 0 && (
                 <span style={{
-                  fontFamily: 'DM Mono, monospace',
+                  fontFamily: 'JetBrains Mono, monospace',
                   fontSize: '0.7rem',
                   background: 'rgba(108,99,255,0.2)',
                   color: 'var(--accent-light)',
@@ -128,7 +128,7 @@ export default function Sidebar({ user, deviceCount = 0 }: SidebarProps) {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
-              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', fontWeight: 500, color: 'white' }}>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', fontWeight: 500, color: 'white' }}>
                 {initials}
               </span>
             )}
@@ -145,7 +145,7 @@ export default function Sidebar({ user, deviceCount = 0 }: SidebarProps) {
               {user?.name || 'User'}
             </div>
             <div style={{ 
-              fontFamily: 'DM Mono, monospace',
+              fontFamily: 'JetBrains Mono, monospace',
               fontSize: '0.7rem', 
               color: 'var(--text-muted)',
               overflow: 'hidden', 

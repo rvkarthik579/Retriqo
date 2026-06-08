@@ -48,11 +48,11 @@ export default function ProjectCard({
       {/* Header */}
       <div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
-          <h3 className="font-syne" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
+          <h3 className="font-geist" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.3 }}>
             {machineName}
           </h3>
           <span style={{
-            fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', fontWeight: 500,
+            fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', fontWeight: 500,
             padding: '4px 10px', borderRadius: 4,
             background: s.bg, color: s.color, border: `1px solid ${s.border}`,
             textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0
@@ -79,13 +79,13 @@ export default function ProjectCard({
       <div style={{ display: 'flex', gap: 16, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <IconFile size={14} color="var(--text-muted)" />
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {reportCount} {reportCount === 1 ? 'report' : 'reports'}
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <IconClock size={14} color="var(--text-muted)" />
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {formatDate(lastUpdated)}
           </span>
         </div>

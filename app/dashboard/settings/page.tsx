@@ -141,7 +141,7 @@ export default function SettingsPage() {
       )}
 
       <div style={{ marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
-        <h1 className="font-syne" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>Settings</h1>
+        <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>Settings</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Manage your account, organization, and security preferences</p>
       </div>
 
@@ -152,7 +152,7 @@ export default function SettingsPage() {
             <div style={{ width: 36, height: 36, background: 'rgba(108,99,255,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <IconUser size={18} color="var(--accent-light)" />
             </div>
-            <h2 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600 }}>Profile</h2>
+            <h2 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600 }}>Profile</h2>
           </div>
 
           {loading ? (
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                 }}>
                   {avatarUrl
                     ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    : <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '1.25rem', fontWeight: 500, color: 'white' }}>{initials}</span>
+                    : <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '1.25rem', fontWeight: 500, color: 'white' }}>{initials}</span>
                   }
                 </div>
                 <div>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
             <div style={{ width: 36, height: 36, background: 'rgba(108,99,255,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <IconBuilding size={18} color="var(--accent-light)" />
             </div>
-            <h2 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600 }}>Organization</h2>
+            <h2 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600 }}>Organization</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
             <div style={{ width: 36, height: 36, background: 'rgba(108,99,255,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <IconShield size={18} color="var(--accent-light)" />
             </div>
-            <h2 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600 }}>Security Defaults</h2>
+            <h2 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600 }}>Security Defaults</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
@@ -283,7 +283,7 @@ export default function SettingsPage() {
             <div style={{ width: 36, height: 36, background: 'rgba(255,90,90,0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <IconAlertTriangle size={18} color="var(--danger)" />
             </div>
-            <h2 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--danger)' }}>Danger Zone</h2>
+            <h2 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--danger)' }}>Danger Zone</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 0', borderBottom: '1px solid rgba(255,90,90,0.1)', flexWrap: 'wrap', gap: 12 }}>
@@ -316,7 +316,7 @@ export default function SettingsPage() {
       {deleteQRModal && (
         <div className="modal-overlay" onClick={() => setDeleteQRModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2 className="font-syne" style={{ marginBottom: 12 }}>Delete All QR Codes?</h2>
+            <h2 className="font-geist" style={{ marginBottom: 12 }}>Delete All QR Codes?</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>
               All your QR codes will be permanently deleted. Anyone who scans them will see an error. Your project files will be preserved.
             </p>
@@ -332,7 +332,7 @@ export default function SettingsPage() {
       {deleteAccountModal && (
         <div className="modal-overlay" onClick={() => setDeleteAccountModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <h2 className="font-syne" style={{ marginBottom: 12, color: 'var(--danger)' }}>Delete Account?</h2>
+            <h2 className="font-geist" style={{ marginBottom: 12, color: 'var(--danger)' }}>Delete Account?</h2>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.7 }}>
               This will permanently delete your account, all projects, reports, files, and QR codes. <strong style={{ color: 'var(--text-primary)' }}>This cannot be undone.</strong>
             </p>
@@ -344,7 +344,7 @@ export default function SettingsPage() {
                 placeholder="DELETE"
                 value={deleteConfirmText}
                 onChange={e => setDeleteConfirmText(e.target.value)}
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                style={{ fontFamily: 'JetBrains Mono, monospace' }}
               />
             </div>
             <div style={{ display: 'flex', gap: 10 }}>

@@ -64,7 +64,7 @@ function TreeNodeItem({
           <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', flex: 1 }}>
             {node.name}
           </span>
-          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'DM Mono, monospace' }}>
+          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
             {node.children?.filter(c => c.type === 'file').length} files
           </span>
         </div>
@@ -103,7 +103,7 @@ function TreeNodeItem({
         {node.name}
       </span>
       <span style={{
-        fontFamily: 'DM Mono, monospace', fontSize: '0.65rem',
+        fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem',
         padding: '2px 6px', borderRadius: 4,
         background: bg, color: color,
         border: `1px solid ${color}33`,
@@ -142,10 +142,10 @@ export default function FileTree({ nodes, selectedPaths, onToggle }: FileTreePro
         borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
-        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
           File Tree
         </span>
-        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--accent-light)' }}>
+        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--accent-light)' }}>
           {selectedPaths.size} selected
         </span>
       </div>

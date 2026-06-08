@@ -68,14 +68,14 @@ export default function LoginPage() {
           }}>
             <IconQrcode size={22} color="white" />
           </div>
-          <span className="font-syne text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          <span className="font-geist text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
             Project QR
           </span>
         </div>
 
         {/* Card */}
         <div className="card" style={{ padding: '40px' }}>
-          <h1 className="font-syne text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
+          <h1 className="font-geist text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
             Welcome back
           </h1>
           <p className="mb-8" style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
@@ -101,7 +101,7 @@ export default function LoginPage() {
           }}>
             <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
             <span style={{ 
-              fontFamily: 'DM Mono, monospace', 
+              fontFamily: 'JetBrains Mono, monospace', 
               fontSize: '0.75rem', 
               color: 'var(--text-muted)',
               textTransform: 'uppercase',
@@ -202,7 +202,7 @@ export default function LoginPage() {
           marginTop: 24, 
           fontSize: '0.8125rem',
           color: 'var(--text-muted)',
-          fontFamily: 'DM Mono, monospace'
+          fontFamily: 'JetBrains Mono, monospace'
         }}>
           AES-256 Encrypted · SOC 2 Type II
         </p>

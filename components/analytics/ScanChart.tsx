@@ -18,10 +18,10 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
         borderRadius: 8,
         padding: '10px 14px',
       }}>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
           {label}
         </div>
-        <div style={{ fontFamily: 'Syne, sans-serif', fontSize: '1.125rem', fontWeight: 700, color: 'var(--accent-light)' }}>
+        <div style={{ fontFamily: 'Geist, sans-serif', fontSize: '1.125rem', fontWeight: 700, color: 'var(--accent-light)' }}>
           {payload[0].value} scans
         </div>
       </div>
@@ -37,12 +37,12 @@ export default function ScanChart({ data }: ScanChartProps) {
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
         <XAxis
           dataKey="date"
-          tick={{ fill: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', fontSize: 11 }}
+          tick={{ fill: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fill: 'var(--text-muted)', fontFamily: 'DM Mono, monospace', fontSize: 11 }}
+          tick={{ fill: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}
           axisLine={false}
           tickLine={false}
           allowDecimals={false}

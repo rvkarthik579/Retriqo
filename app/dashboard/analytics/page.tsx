@@ -91,7 +91,7 @@ export default function AnalyticsPage() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <div style={{ marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid var(--border)' }}>
-        <h1 className="font-syne" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>Analytics</h1>
+        <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>Analytics</h1>
         <p style={{ color: 'var(--text-secondary)' }}>Monitor scan activity and access patterns across all your QR codes</p>
       </div>
 
@@ -107,8 +107,8 @@ export default function AnalyticsPage() {
         {/* Chart */}
         <div className="card" style={{ padding: 24, gridColumn: 'span 2' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-            <h2 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600 }}>Daily Scan Volume</h2>
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Last 14 days</span>
+            <h2 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600 }}>Daily Scan Volume</h2>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Last 14 days</span>
           </div>
           {loading ? (
             <div className="skeleton" style={{ height: 240, borderRadius: 8 }} />
@@ -119,7 +119,7 @@ export default function AnalyticsPage() {
 
         {/* Top assets */}
         <div className="card" style={{ padding: 24 }}>
-          <h2 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 20 }}>Top Scanned Assets</h2>
+          <h2 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 20 }}>Top Scanned Assets</h2>
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {[...Array(5)].map((_, i) => <div key={i} className="skeleton" style={{ height: 40 }} />)}
@@ -134,7 +134,7 @@ export default function AnalyticsPage() {
                     <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
                       {asset.name}
                     </span>
-                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 8 }}>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: 8 }}>
                       {asset.scans}
                     </span>
                   </div>
@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
         <div className="card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <IconActivity size={16} color="var(--accent-light)" />
-            <h2 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600 }}>Recent Access Events</h2>
+            <h2 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600 }}>Recent Access Events</h2>
           </div>
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -187,7 +187,7 @@ export default function AnalyticsPage() {
                       ) : null}
                       {event.device_type} · {event.ip_address}
                     </div>
-                    <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                       {new Date(event.scanned_at).toLocaleString()}
                       {event.block_reason ? ` · ${event.block_reason}` : ''}
                     </div>
@@ -207,7 +207,7 @@ export default function AnalyticsPage() {
                     width: '100%', padding: '10px', textAlign: 'center',
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: 'var(--accent-light)', fontSize: '0.8125rem',
-                    fontFamily: 'DM Mono, monospace', marginTop: 8
+                    fontFamily: 'JetBrains Mono, monospace', marginTop: 8
                   }}
                 >
                   Load more events

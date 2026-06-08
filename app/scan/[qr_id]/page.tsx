@@ -137,7 +137,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
           <div style={{ width: 64, height: 64, background: 'rgba(255,90,90,0.1)', border: '1px solid rgba(255,90,90,0.2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <IconAlertTriangle size={28} color="var(--danger)" />
           </div>
-          <h1 className="font-syne" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--danger)' }}>
+          <h1 className="font-geist" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--danger)' }}>
             Access Locked
           </h1>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 300, lineHeight: 1.7 }}>
@@ -156,7 +156,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
           <div style={{ width: 64, height: 64, background: 'rgba(255,90,90,0.1)', border: '1px solid rgba(255,90,90,0.2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <IconClock size={28} color="var(--danger)" />
           </div>
-          <h1 className="font-syne" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--danger)' }}>
+          <h1 className="font-geist" style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--danger)' }}>
             QR Code Expired
           </h1>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 320, lineHeight: 1.7 }}>
@@ -178,7 +178,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
           <div style={{ width: 64, height: 64, background: 'rgba(255,90,90,0.1)', border: '1px solid rgba(255,90,90,0.2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <IconAlertTriangle size={28} color="var(--danger)" />
           </div>
-          <h1 className="font-syne" style={{ fontSize: '1.5rem', fontWeight: 700 }}>QR Code Revoked</h1>
+          <h1 className="font-geist" style={{ fontSize: '1.5rem', fontWeight: 700 }}>QR Code Revoked</h1>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 300, lineHeight: 1.7 }}>
             This QR code has been deactivated by the report owner. Contact them for an updated code.
           </p>
@@ -195,7 +195,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
           <div style={{ width: 64, height: 64, background: 'rgba(255,90,90,0.1)', border: '1px solid rgba(255,90,90,0.2)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <IconAlertTriangle size={28} color="var(--danger)" />
           </div>
-          <h1 className="font-syne" style={{ fontSize: '1.5rem', fontWeight: 700 }}>Not Found</h1>
+          <h1 className="font-geist" style={{ fontSize: '1.5rem', fontWeight: 700 }}>Not Found</h1>
           <p style={{ color: 'var(--text-secondary)', maxWidth: 300, lineHeight: 1.7 }}>{errorMessage}</p>
         </div>
       </ScanShell>
@@ -218,7 +218,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
             textAlign: 'center',
           }}>
             <div style={{
-              fontFamily: 'Syne, sans-serif',
+              fontFamily: 'Geist, sans-serif',
               fontSize: 'clamp(2rem, 10vw, 3.5rem)',
               fontWeight: 800,
               color: s.color,
@@ -231,10 +231,10 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
 
           {/* Machine name */}
           <div style={{ textAlign: 'center' }}>
-            <h1 className="font-syne" style={{ fontSize: 'clamp(1.25rem, 5vw, 1.75rem)', fontWeight: 700, marginBottom: 4 }}>
+            <h1 className="font-geist" style={{ fontSize: 'clamp(1.25rem, 5vw, 1.75rem)', fontWeight: 700, marginBottom: 4 }}>
               {scanData.machineName}
             </h1>
-            <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)' }}>
+            <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)' }}>
               {qr_id}
             </p>
           </div>
@@ -259,12 +259,12 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
               <IconQrcode size={14} color="var(--text-muted)" />
-              <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 Powered by Project QR
               </span>
             </div>
             {scanData.expiryDate && (
-              <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+              <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 Expires {new Date(scanData.expiryDate).toLocaleDateString()}
               </p>
             )}
@@ -301,7 +301,7 @@ function ScanShell({ children }: { children: React.ReactNode }) {
         <div style={{ width: 24, height: 24, background: 'var(--accent)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <IconQrcode size={14} color="white" />
         </div>
-        <span className="font-syne" style={{ fontSize: '0.875rem', fontWeight: 700 }}>Project QR</span>
+        <span className="font-geist" style={{ fontSize: '0.875rem', fontWeight: 700 }}>Project QR</span>
       </div>
 
       <div className="animate-fade-up" style={{ 

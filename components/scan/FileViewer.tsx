@@ -32,13 +32,13 @@ export default function FileViewer({
         border: '1px solid var(--border)',
         borderRadius: 12, padding: 20
       }}>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
           File
         </div>
         <div style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 4, wordBreak: 'break-all' }}>
           {fileName}
         </div>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
           {ext?.toUpperCase()}{fileSize ? ` · ${formatFileSize(fileSize)}` : ''}
         </div>
       </div>
@@ -101,7 +101,7 @@ export default function FileViewer({
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             padding: '10px 0', borderBottom: '1px solid var(--border)'
           }}>
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {item.label}
             </span>
             <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
@@ -118,7 +118,7 @@ export default function FileViewer({
           border: '1px solid var(--border)',
           borderRadius: 10,
         }}>
-          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+          <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
             Inspector Notes
           </div>
           <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>

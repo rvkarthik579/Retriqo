@@ -39,7 +39,7 @@ export default function MetricCard({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {trendValue && (
             <span style={{
-              fontFamily: 'DM Mono, monospace',
+              fontFamily: 'JetBrains Mono, monospace',
               fontSize: '0.75rem',
               color: trend === 'up' ? 'var(--success)' : trend === 'down' ? 'var(--danger)' : 'var(--text-muted)',
             }}>

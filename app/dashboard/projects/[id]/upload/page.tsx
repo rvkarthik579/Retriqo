@@ -327,7 +327,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
       </Link>
 
       <div style={{ marginBottom: 32 }}>
-        <h1 className="font-syne" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 8 }}>
+        <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 8 }}>
           Upload Inspection Report
         </h1>
         <p style={{ color: 'var(--text-secondary)' }}>
@@ -363,7 +363,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         {currentStep === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <h2 className="font-syne" style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 8 }}>
+              <h2 className="font-geist" style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 8 }}>
                 Upload Files
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -392,7 +392,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 <div style={{ color: 'var(--text-primary)', fontSize: '1rem', fontWeight: 500, marginBottom: 4 }}>
                   Drop files here or click to browse
                 </div>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   ZIP · RAR · EAR · WAR · PDF · DOCX — max 50MB
                 </div>
               </div>
@@ -415,11 +415,16 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 background: 'rgba(108,99,255,0.06)',
                 border: '1px solid rgba(108,99,255,0.15)',
                 borderRadius: 8,
-                fontFamily: 'DM Mono, monospace',
+                fontFamily: 'JetBrains Mono, monospace',
                 fontSize: '0.8125rem',
-                color: 'var(--accent-light)'
+                color: '#a89cff'
               }}>
-                <div className="skeleton" style={{ width: 16, height: 16, borderRadius: '50%' }} />
+                <div style={{
+                  width: 14, height: 14, borderRadius: '50%',
+                  border: '2px solid #6c63ff',
+                  borderTopColor: 'transparent',
+                  animation: 'spin 600ms linear infinite'
+                }} />
                 Extracting files from ZIP...
               </div>
             )}
@@ -468,7 +473,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         {/* STEP 2: Report Details */}
         {currentStep === 1 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-            <h2 className="font-syne" style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+            <h2 className="font-geist" style={{ fontSize: '1.2rem', fontWeight: 600 }}>
               Inspection Report Details
             </h2>
 
@@ -536,7 +541,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         {currentStep === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <h2 className="font-syne" style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 8 }}>
+              <h2 className="font-geist" style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 8 }}>
                 QR Code Expiry
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
@@ -551,7 +556,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         {currentStep === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
             <div>
-              <h2 className="font-syne" style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 8 }}>
+              <h2 className="font-geist" style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: 8 }}>
                 Security & Label Settings
               </h2>
             </div>
@@ -592,7 +597,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                     maxLength={4}
                     value={pin}
                     onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    style={{ fontFamily: 'DM Mono, monospace', fontSize: '1.25rem', letterSpacing: '0.3em', maxWidth: 160 }}
+                    style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '1.25rem', letterSpacing: '0.3em', maxWidth: 160 }}
                   />
                   {pin.length > 0 && pin.length < 4 && (
                     <p style={{ color: 'var(--warning)', fontSize: '0.8125rem', marginTop: 8 }}>
@@ -648,7 +653,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                   }}>
                     <IconQrcode size={36} color="var(--accent-light)" />
                   </div>
-                  <h2 className="font-syne" style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 8 }}>
+                  <h2 className="font-geist" style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: 8 }}>
                     Ready to Generate
                   </h2>
                   <p style={{ color: 'var(--text-secondary)' }}>
@@ -671,8 +676,8 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                     { label: 'Files', value: `${selectedFiles.size || uploadedFiles.length}` },
                   ].map(item => (
                     <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                      <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{item.label}</span>
-                      <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.value}</span>
+                      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{item.label}</span>
+                      <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -702,7 +707,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                         transition: 'width 300ms ease'
                       }} />
                     </div>
-                    <p style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       Uploading files and generating QR codes... {uploadProgress}%
                     </p>
                   </div>
@@ -722,7 +727,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
                   <div>
-                    <h2 className="font-syne" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4 }}>
+                    <h2 className="font-geist" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4 }}>
                       ✓ QR Codes Generated!
                     </h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>

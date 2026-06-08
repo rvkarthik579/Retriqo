@@ -44,14 +44,14 @@ export default function QRCard({
             {machineName}
           </div>
           <div style={{ 
-            fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)',
+            fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
           }}>
             {fileName}
           </div>
         </div>
         <span style={{
-          fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', fontWeight: 500,
+          fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', fontWeight: 500,
           padding: '4px 8px', borderRadius: 4, flexShrink: 0,
           background: s.bg, color: s.color, border: `1px solid ${s.border}`,
           textTransform: 'uppercase', letterSpacing: '0.05em'
@@ -79,16 +79,16 @@ export default function QRCard({
       {/* Meta */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>QR ID</span>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)', fontWeight: 500 }}>{qrUniqueId}</span>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>QR ID</span>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)', fontWeight: 500 }}>{qrUniqueId}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expires</span>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: expiryDate ? 'var(--text-secondary)' : 'var(--success)' }}>{formatExpiry(expiryDate)}</span>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Expires</span>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: expiryDate ? 'var(--text-secondary)' : 'var(--success)' }}>{formatExpiry(expiryDate)}</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Generated</span>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Generated</span>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
             {new Date(generatedDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
           </span>
         </div>

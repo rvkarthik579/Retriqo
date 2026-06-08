@@ -84,7 +84,7 @@ export default function ExpiryPicker({ value, onChange }: ExpiryPickerProps) {
         background: 'rgba(108,99,255,0.05)',
         border: '1px solid rgba(108,99,255,0.15)',
         borderRadius: 8,
-        fontFamily: 'DM Mono, monospace',
+        fontFamily: 'JetBrains Mono, monospace',
         fontSize: '0.8125rem',
         color: 'var(--text-secondary)',
       }}>

@@ -119,7 +119,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
 
   if (!project) return (
     <div style={{ textAlign: 'center', padding: 64 }}>
-      <h2 className="font-syne" style={{ marginBottom: 8 }}>Project not found</h2>
+      <h2 className="font-geist" style={{ marginBottom: 8 }}>Project not found</h2>
       <Link href="/dashboard" className="btn btn-secondary" style={{ display: 'inline-flex', marginTop: 16 }}>
         Back to Dashboard
       </Link>
@@ -139,7 +139,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
         <div style={{ flex: 1 }}>
-          <h1 className="font-syne" style={{ fontSize: '2rem', fontWeight: 700, marginBottom: 12 }}>
+          <h1 className="font-geist" style={{ fontSize: '2rem', fontWeight: 700, marginBottom: 12 }}>
             {project.machine_name}
           </h1>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
@@ -182,10 +182,10 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Master QR Code</span>
-            <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(61,255,160,0.1)', color: 'var(--success)', border: '1px solid rgba(61,255,160,0.2)' }}>PERMANENT</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Master QR Code</span>
+            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(61,255,160,0.1)', color: 'var(--success)', border: '1px solid rgba(61,255,160,0.2)' }}>PERMANENT</span>
           </div>
-          <h3 className="font-syne" style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 4 }}>
+          <h3 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 4 }}>
             {project.machine_name}
           </h3>
           <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
@@ -197,10 +197,10 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
       {/* Reports Timeline */}
       <div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 className="font-syne" style={{ fontSize: '1.1rem', fontWeight: 600 }}>
+          <h2 className="font-geist" style={{ fontSize: '1.1rem', fontWeight: 600 }}>
             Inspection History
           </h2>
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-hover)', padding: '4px 10px', borderRadius: 20 }}>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--bg-hover)', padding: '4px 10px', borderRadius: 20 }}>
             {reports.length} report{reports.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -208,7 +208,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         {reports.length === 0 ? (
           <div className="card" style={{ padding: 48, textAlign: 'center' }}>
             <IconFile size={40} color="var(--text-muted)" style={{ margin: '0 auto 16px' }} />
-            <h3 className="font-syne" style={{ marginBottom: 8 }}>No reports yet</h3>
+            <h3 className="font-geist" style={{ marginBottom: 8 }}>No reports yet</h3>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>Upload your first inspection report to get started</p>
             <Link href={`/dashboard/projects/${projectId}/upload`} className="btn btn-primary" style={{ display: 'inline-flex' }}>
               <IconUpload size={16} />
@@ -225,11 +225,11 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                        <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
                           Version {reports.length - index}
                         </span>
                         <span style={{
-                          fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', fontWeight: 500,
+                          fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', fontWeight: 500,
                           padding: '3px 8px', borderRadius: 4,
                           background: s.bg, color: s.color, border: `1px solid ${s.border}`,
                           textTransform: 'uppercase', letterSpacing: '0.05em'
@@ -270,7 +270,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                   {/* Files */}
                   {report.files && report.files.length > 0 && (
                     <div>
-                      <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
                         Files & QR Codes
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -289,18 +289,18 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                                   {file.file_name}
                                 </div>
                                 {file.file_size && (
-                                  <div style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                                     {formatFileSize(file.file_size)}
                                   </div>
                                 )}
                               </div>
                               {qr && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <span style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)' }}>
+                                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)' }}>
                                     {qr.qr_unique_id}
                                   </span>
                                   <span style={{
-                                    fontFamily: 'DM Mono, monospace', fontSize: '0.65rem',
+                                    fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem',
                                     padding: '2px 8px', borderRadius: 4,
                                     background: qr.is_active ? 'rgba(61,255,160,0.1)' : 'rgba(255,255,255,0.05)',
                                     color: qr.is_active ? 'var(--success)' : 'var(--text-muted)',
@@ -312,7 +312,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                                     <Link
                                       href={`/scan/${qr.qr_unique_id}`}
                                       target="_blank"
-                                      style={{ fontFamily: 'DM Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textDecoration: 'none' }}
+                                      style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textDecoration: 'none' }}
                                     >
                                       Preview →
                                     </Link>
@@ -340,7 +340,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
               <div style={{ width: 40, height: 40, background: 'rgba(255,90,90,0.1)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <IconAlertTriangle size={20} color="var(--danger)" />
               </div>
-              <h2 className="font-syne" style={{ fontSize: '1.1rem', fontWeight: 700 }}>Revoke All QR Codes?</h2>
+              <h2 className="font-geist" style={{ fontSize: '1.1rem', fontWeight: 700 }}>Revoke All QR Codes?</h2>
             </div>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.7 }}>
               All active QR codes for this project will be immediately invalidated. Anyone trying to scan them will be blocked. This action cannot be undone.
