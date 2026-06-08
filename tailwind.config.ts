@@ -22,7 +22,7 @@ const config: Config = {
         'text-muted': '#5e5c80',
       },
       fontFamily: {
-        geist: ['var(--font-geist)', 'sans-serif'],
+        geist: ['var(--font-geist-sans)', 'sans-serif'],
         inter: ['var(--font-inter)', 'sans-serif'],
         mono: ['var(--font-mono)', 'monospace'],
       },

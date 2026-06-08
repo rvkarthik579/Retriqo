@@ -262,8 +262,7 @@ export default function LandingPage() {
           </span>
         </div>
 
-        <h2 style={{
-          fontFamily: 'Geist, sans-serif',
+        <h2 className="font-geist" style={{
           fontSize: 'clamp(36px, 5vw, 64px)',
           fontWeight: 700, letterSpacing: '-0.02em',
           lineHeight: 1.1, marginBottom: 16, color: '#f0eeff'
