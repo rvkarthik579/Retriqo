@@ -239,7 +239,7 @@ export default function LandingPage() {
             fontSize: 11, color: '#a89cff',
             letterSpacing: '0.12em', textTransform: 'uppercase',
             marginBottom: 16
-          }}>// How it works</div>
+          }}>{'// How it works'}</div>
           <h2 style={{
             fontFamily: 'Geist, sans-serif',
             fontSize: 'clamp(32px, 4vw, 48px)',
@@ -300,7 +300,7 @@ export default function LandingPage() {
             fontSize: 11, color: '#a89cff',
             letterSpacing: '0.12em', textTransform: 'uppercase',
             marginBottom: 16
-          }}>// Core capabilities</div>
+          }}>{'// Core capabilities'}</div>
           <h2 style={{
             fontFamily: 'Geist, sans-serif',
             fontSize: 'clamp(32px, 4vw, 48px)',
