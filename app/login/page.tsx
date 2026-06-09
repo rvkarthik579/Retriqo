@@ -26,9 +26,13 @@ export default function LoginPage() {
     try {
       const { error: authError } = await signInWithEmail(email, password)
       if (authError) {
-        setError(authError.message === 'Invalid login credentials' 
-          ? 'Invalid email or password. Please try again.'
-          : authError.message)
+        if (authError.message.includes('Email not confirmed')) {
+          setError('Please check your email and confirm your account first.')
+        } else if (authError.message.includes('Invalid login credentials')) {
+          setError('Wrong email or password. Try signing in with Google instead.')
+        } else {
+          setError(authError.message)
+        }
       } else {
         router.push('/dashboard')
         router.refresh()
@@ -52,6 +56,15 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-base)' }}>
+      <Link href="/" style={{
+        position: 'fixed', top: 20, left: 24,
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        color: '#9896b8', textDecoration: 'none',
+        fontSize: 14, transition: 'color 150ms ease',
+        zIndex: 10
+      }}>
+        ← Back to home
+      </Link>
       {/* Grid background */}
       <div className="fixed inset-0 grid-bg opacity-50 pointer-events-none" />
       

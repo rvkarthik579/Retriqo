@@ -88,6 +88,15 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-base)' }}>
+      <Link href="/" style={{
+        position: 'fixed', top: 20, left: 24,
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        color: '#9896b8', textDecoration: 'none',
+        fontSize: 14, transition: 'color 150ms ease',
+        zIndex: 10
+      }}>
+        ← Back to home
+      </Link>
       <div className="fixed inset-0 grid-bg opacity-50 pointer-events-none" />
       
       <div className="w-full max-w-md relative z-10 animate-fade-up">
