@@ -3,7 +3,9 @@
 import { useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import JSZip from 'jszip'
+import { Archive } from 'libarchive.js/main.js'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
+
 import { uploadFile } from '@/lib/storage'
 import { generateQRId, getExpiryFromPreset } from '@/lib/qr'
 import FileTree, { TreeNode } from '@/components/upload/FileTree'
@@ -15,6 +17,10 @@ import {
   IconShield, IconLock, IconQrcode,
   IconAlertCircle, IconX
 } from '@tabler/icons-react'
+
+Archive.init({
+  workerUrl: '/libarchive/worker-bundle.js'
+})
 
 const STEPS = ['Upload Files', 'Report Details', 'Expiry', 'Security', 'Generate']
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
@@ -121,6 +127,43 @@ export default function UploadPage({ params }: { params: { id: string } }) {
     return rootNodes
   }
 
+  async function buildTreeFromRAR(file: File): Promise<TreeNode[]> {
+    const archive = await Archive.open(file)
+    const entries = await archive.getFilesArray()
+    const rootNodes: TreeNode[] = []
+    const folderMap = new Map<string, TreeNode>()
+
+    for (const entry of entries) {
+      if (entry.file.name.endsWith('/')) continue
+      const path = entry.file.name
+      const parts = path.split('/')
+      const fileName = parts[parts.length - 1]
+      if (!fileName) continue
+
+      const blob = await entry.file.arrayBuffer()
+      const fileObj = new File([blob], fileName)
+
+      if (parts.length === 1) {
+        rootNodes.push({ name: fileName, path, type: 'file', file: fileObj })
+      } else {
+        let parentList = rootNodes
+        let currentPath = ''
+        for (let i = 0; i < parts.length - 1; i++) {
+          currentPath = i === 0 ? parts[i] : currentPath + '/' + parts[i]
+          let folder = folderMap.get(currentPath)
+          if (!folder) {
+            folder = { name: parts[i], path: currentPath, type: 'folder', children: [] }
+            folderMap.set(currentPath, folder)
+            parentList.push(folder)
+          }
+          parentList = folder.children!
+        }
+        parentList.push({ name: fileName, path, type: 'file', file: fileObj })
+      }
+    }
+    return rootNodes
+  }
+
   async function processFiles(files: File[]) {
     setProcessingFiles(true)
     try {
@@ -138,6 +181,9 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         if (ext === '.zip') {
           const zipNodes = await buildTreeFromZip(file)
           allNodes.push({ name: file.name, path: file.name, type: 'folder', children: zipNodes })
+        } else if (ext === '.rar') {
+          const rarNodes = await buildTreeFromRAR(file)
+          allNodes.push({ name: file.name, path: file.name, type: 'folder', children: rarNodes })
         } else {
           allNodes.push({ name: file.name, path: file.name, type: 'file', file })
         }
