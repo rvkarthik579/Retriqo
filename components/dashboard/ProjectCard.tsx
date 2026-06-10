@@ -10,6 +10,7 @@ interface ProjectCardProps {
   reportCount: number
   lastUpdated?: string
   loading?: boolean
+  onDelete?: () => void
 }
 
 const statusConfig = {
@@ -25,7 +26,7 @@ function formatDate(date?: string) {
 }
 
 export default function ProjectCard({ 
-  id, machineName, location, projectType, status = 'none', reportCount, lastUpdated, loading
+  id, machineName, location, projectType, status = 'none', reportCount, lastUpdated, loading, onDelete
 }: ProjectCardProps) {
   if (loading) {
     return (
@@ -92,14 +93,44 @@ export default function ProjectCard({
       </div>
 
       {/* Action */}
-      <Link
-        href={`/dashboard/projects/${id}`}
-        className="btn btn-secondary btn-sm"
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
-      >
-        <span>Open Project</span>
-        <IconChevronRight size={16} />
-      </Link>
+      <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+        <Link
+          href={`/dashboard/projects/${id}`}
+          className="btn btn-secondary btn-sm"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1 }}
+        >
+          <span>Open Project</span>
+          <IconChevronRight size={16} />
+        </Link>
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onDelete()
+            }}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255,90,90,0.2)',
+              color: '#ff5a5a',
+              padding: '6px 12px',
+              borderRadius: 6,
+              fontSize: 12,
+              cursor: 'pointer',
+              transition: 'all 150ms ease',
+              fontFamily: 'Inter, sans-serif'
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,90,90,0.08)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent'
+            }}
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   )
 }

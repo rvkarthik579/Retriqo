@@ -178,69 +178,92 @@ export default function UploadPage({ params }: { params: { id: string } }) {
 
       for (const file of validFiles) {
         const name = file.name.toLowerCase()
-        
-        if (name.endsWith('.zip')) {
-          // ZIP — full tree expansion
+        const isArchive = ['.zip', '.rar', '.tar', '.gz', '.7z', '.ear', '.war']
+          .some(ext => name.endsWith(ext))
+
+        if (isArchive) {
           try {
-            const zipNodes = await buildTreeFromZip(file)
-            if (zipNodes.length > 0) {
-              allNodes.push({ 
-                name: file.name, 
-                path: file.name, 
-                type: 'folder', 
-                children: zipNodes 
-              })
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const response = await fetch('/api/extract-archive', {
+              method: 'POST',
+              body: formData
+            })
+
+            if (response.ok) {
+              const { files: extractedFiles } = await response.json()
+              
+              if (extractedFiles && extractedFiles.length > 0) {
+                const folderMap = new Map<string, TreeNode>()
+                const rootNodes: TreeNode[] = []
+
+                extractedFiles.forEach((ef: {name: string, path: string}) => {
+                  const parts = ef.path.split('/')
+                  const fileName = parts[parts.length - 1]
+                  if (!fileName) return
+
+                  if (parts.length === 1) {
+                    rootNodes.push({ 
+                      name: fileName, path: ef.path, 
+                      type: 'file', file 
+                    })
+                  } else {
+                    let parentList = rootNodes
+                    let currentPath = ''
+                    for (let i = 0; i < parts.length - 1; i++) {
+                      currentPath = i === 0 
+                        ? parts[i] 
+                        : currentPath + '/' + parts[i]
+                      let folder = folderMap.get(currentPath)
+                      if (!folder) {
+                        folder = { 
+                          name: parts[i], path: currentPath, 
+                          type: 'folder', children: [] 
+                        }
+                        folderMap.set(currentPath, folder)
+                        parentList.push(folder)
+                      }
+                      parentList = folder.children!
+                    }
+                    parentList.push({ 
+                      name: fileName, path: ef.path, 
+                      type: 'file', file 
+                    })
+                  }
+                })
+
+                allNodes.push({ 
+                  name: file.name, path: file.name, 
+                  type: 'folder', children: rootNodes 
+                })
+              } else {
+                allNodes.push({ 
+                  name: file.name, path: file.name, 
+                  type: 'file', file 
+                })
+              }
             } else {
               allNodes.push({ 
-                name: file.name, 
-                path: file.name, 
-                type: 'file', 
-                file 
+                name: file.name, path: file.name, 
+                type: 'file', file 
               })
             }
-          } catch (err) {
+          } catch {
             allNodes.push({ 
-              name: file.name, 
-              path: file.name, 
-              type: 'file', 
-              file 
+              name: file.name, path: file.name, 
+              type: 'file', file 
             })
           }
-        } else if (
-          name.endsWith('.rar') || 
-          name.endsWith('.7z') || 
-          name.endsWith('.tar') ||
-          name.endsWith('.gz')
-        ) {
-          // RAR/7Z/TAR — upload as single file, show hint
-          setExtractionError(
-            `"${file.name}" is a ${name.split('.').pop()?.toUpperCase()} file. ` +
-            `File tree preview is only available for ZIP files. ` +
-            `The file will still be uploaded and QR generated correctly.`
-          )
-          allNodes.push({ 
-            name: file.name, 
-            path: file.name, 
-            type: 'file', 
-            file 
-          })
         } else {
-          // PDF, DOCX etc — single file
           allNodes.push({ 
-            name: file.name, 
-            path: file.name, 
-            type: 'file', 
-            file 
+            name: file.name, path: file.name, 
+            type: 'file', file 
           })
         }
       }
 
       setTreeNodes(allNodes)
-      
-      // Auto advance logic
-      if (!allNodes.some(n => n.type === 'folder')) {
-        setCurrentStep(2) // Jump straight to Settings
-      }
     } finally {
       setProcessingFiles(false)
     }

@@ -46,40 +46,66 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
 
   async function fetchScanData(pin?: string) {
     try {
-      const res = await fetch(`/api/qr/scan/${qr_id}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: pin || null }),
-      })
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
 
-      const data = await res.json()
+      const { data: qrCode, error } = await supabase
+        .from('qr_codes')
+        .select('*, files(*, reports(*, projects(*)))')
+        .eq('qr_unique_id', qr_id)
+        .single()
 
-      if (data.status === 'expired') {
-        setExpiredDate(data.expiryDate)
-        setState('expired')
-      } else if (data.status === 'revoked') {
-        setState('revoked')
-      } else if (data.status === 'pin_required') {
-        setState('pin_required')
-      } else if (data.status === 'wrong_pin') {
-        setPinError(true)
-        setAttemptsLeft(data.attemptsLeft || 2)
-        if (data.locked) setState('locked')
-      } else if (data.status === 'locked') {
-        setState('locked')
-      } else if (data.status === 'valid') {
-        setScanData(data.data)
-        setState('valid')
-        // Cache for offline
-        if ('caches' in window) {
-          try {
-            const cache = await caches.open('project-qr-scan-v1')
-            cache.add(window.location.href)
-          } catch {}
-        }
-      } else {
-        setErrorMessage(data.message || 'QR code not found or invalid.')
+      if (error || !qrCode) {
+        setErrorMessage('Invalid QR code')
         setState('error')
+        return
+      }
+      
+      if (!qrCode.is_active) {
+        setState('revoked')
+        return
+      }
+      
+      if (qrCode.expiry_date && new Date(qrCode.expiry_date) < new Date()) {
+        setExpiredDate(qrCode.expiry_date)
+        setState('expired')
+        return
+      }
+
+      // Map the qrCode data to ScanData
+      const file = qrCode.files
+      const report = file?.reports
+      const project = report?.projects
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-qr-files')
+        .getPublicUrl(file?.file_path || '')
+
+      const scanDataObj: ScanData = {
+        fileName: file?.file_name || 'Unknown',
+        fileUrl: publicUrl,
+        fileSize: file?.file_size,
+        status: report?.status || 'pass',
+        machineName: project?.machine_name || 'Unknown',
+        reportDate: report?.created_at || new Date().toISOString(),
+        expiryDate: qrCode.expiry_date,
+        remarks: report?.remarks,
+        requiresPin: false
+      }
+      
+      setScanData(scanDataObj)
+      setState('valid')
+      
+      // Cache for offline
+      if ('caches' in window) {
+        try {
+          const cache = await caches.open('project-qr-scan-v1')
+          cache.add(window.location.href)
+        } catch {}
       }
     } catch {
       setErrorMessage('Network error. Check your connection.')

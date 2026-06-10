@@ -90,6 +90,55 @@ export default function DashboardPage() {
     return 'none'
   }
 
+  async function deleteProject(projectId: string) {
+    if (!confirm('Delete this project? This will also delete all reports, QR codes, and files. This cannot be undone.')) return
+    
+    const supabase = getSupabaseBrowserClient()
+    
+    // Get all files for this project first
+    const { data: files } = await supabase
+      .from('files')
+      .select('file_path')
+      .eq('report_id', supabase
+        .from('reports')
+        .select('id')
+        .eq('project_id', projectId)
+      )
+
+    // Delete files from storage
+    const { data: reportData } = await supabase
+      .from('reports')
+      .select('id')
+      .eq('project_id', projectId)
+
+    if (reportData && reportData.length > 0) {
+      const reportIds = reportData.map(r => r.id)
+      
+      const { data: fileData } = await supabase
+        .from('files')
+        .select('file_path')
+        .in('report_id', reportIds)
+
+      if (fileData && fileData.length > 0) {
+        const paths = fileData.map(f => f.file_path)
+        await supabase.storage
+          .from('project-qr-files')
+          .remove(paths)
+      }
+    }
+
+    // Delete project (cascade deletes reports, files, qr_codes, scan_logs)
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId)
+
+    if (!error) {
+      // Remove from UI immediately (optimistic update)
+      setProjects(prev => prev.filter(p => p.id !== projectId))
+    }
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       {/* Header */}
@@ -212,6 +261,7 @@ export default function DashboardPage() {
                       )[0].created_at
                     : project.created_at
                 }
+                onDelete={() => deleteProject(project.id)}
               />
             ))}
           </div>
