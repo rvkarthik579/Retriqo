@@ -19,13 +19,18 @@ import {
   IconAlertCircle, IconX
 } from '@tabler/icons-react'
 
-Archive.init({
-  workerUrl: '/libarchive/worker-bundle.js'
-})
+if (typeof window !== 'undefined') {
+  Archive.init({ workerUrl: '/worker-bundle.js' })
+}
 
 const STEPS = ['Upload Files', 'Report Details', 'Expiry', 'Security', 'Generate']
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
-const ACCEPTED_TYPES = ['.zip', '.rar', '.ear', '.war', '.pdf', '.docx', '.doc']
+const ACCEPTED_TYPES = [
+  '.zip', '.rar', '.tar', '.gz', '.7z', '.ear', 
+  '.war', '.pdf', '.docx', '.doc', '.tar.gz'
+]
+
+const ARCHIVE_TYPES = ['.zip', '.rar', '.tar', '.gz', '.7z', '.ear', '.war']
 
 interface GeneratedQR {
   qrUniqueId: string
@@ -128,68 +133,120 @@ export default function UploadPage({ params }: { params: { id: string } }) {
     return rootNodes
   }
 
-  async function buildTreeFromRAR(file: File): Promise<TreeNode[]> {
-    const archive = await Archive.open(file)
-    const entries = await archive.getFilesArray()
-    const rootNodes: TreeNode[] = []
-    const folderMap = new Map<string, TreeNode>()
+  async function buildTreeFromArchive(file: File): Promise<TreeNode[]> {
+    try {
+      const archive = await Archive.open(file)
+      const entries = await archive.getFilesArray()
+      const rootNodes: TreeNode[] = []
+      const folderMap = new Map<string, TreeNode>()
 
-    for (const entry of entries) {
-      if (entry.file.name.endsWith('/')) continue
-      const path = entry.file.name
-      const parts = path.split('/')
-      const fileName = parts[parts.length - 1]
-      if (!fileName) continue
+      for (const entry of entries) {
+        const path = entry.file.name
+        if (path.endsWith('/') || path.endsWith('\\')) continue
+        
+        const parts = path.replace(/\\/g, '/').split('/')
+        const fileName = parts[parts.length - 1]
+        if (!fileName || fileName.startsWith('.')) continue
 
-      const blob = await entry.file.arrayBuffer()
-      const fileObj = new File([blob], fileName)
+        const blob = await entry.file.arrayBuffer()
+        const fileObj = new File([blob], fileName)
 
-      if (parts.length === 1) {
-        rootNodes.push({ name: fileName, path, type: 'file', file: fileObj })
-      } else {
-        let parentList = rootNodes
-        let currentPath = ''
-        for (let i = 0; i < parts.length - 1; i++) {
-          currentPath = i === 0 ? parts[i] : currentPath + '/' + parts[i]
-          let folder = folderMap.get(currentPath)
-          if (!folder) {
-            folder = { name: parts[i], path: currentPath, type: 'folder', children: [] }
-            folderMap.set(currentPath, folder)
-            parentList.push(folder)
+        if (parts.length === 1) {
+          rootNodes.push({ 
+            name: fileName, path, type: 'file', file: fileObj 
+          })
+        } else {
+          let parentList = rootNodes
+          let currentPath = ''
+          for (let i = 0; i < parts.length - 1; i++) {
+            currentPath = i === 0 ? parts[i] : currentPath + '/' + parts[i]
+            let folder = folderMap.get(currentPath)
+            if (!folder) {
+              folder = { 
+                name: parts[i], 
+                path: currentPath, 
+                type: 'folder', 
+                children: [] 
+              }
+              folderMap.set(currentPath, folder)
+              parentList.push(folder)
+            }
+            parentList = folder.children!
           }
-          parentList = folder.children!
+          parentList.push({ 
+            name: fileName, path, type: 'file', file: fileObj 
+          })
         }
-        parentList.push({ name: fileName, path, type: 'file', file: fileObj })
       }
+      return rootNodes
+    } catch (err) {
+      console.error('Archive extraction failed:', err)
+      return []
     }
-    return rootNodes
   }
 
   async function processFiles(files: File[]) {
     setProcessingFiles(true)
     try {
       const validFiles = files.filter(f => {
-        const ext = '.' + f.name.split('.').pop()?.toLowerCase()
-        return ACCEPTED_TYPES.includes(ext) && f.size <= MAX_FILE_SIZE
+        const name = f.name.toLowerCase()
+        return ACCEPTED_TYPES.some(ext => name.endsWith(ext)) && 
+               f.size <= MAX_FILE_SIZE
       })
 
       if (validFiles.length === 0) return
       setUploadedFiles(validFiles)
 
       const allNodes: TreeNode[] = []
+
       for (const file of validFiles) {
-        const ext = '.' + file.name.split('.').pop()?.toLowerCase()
-        if (ext === '.zip') {
-          const zipNodes = await buildTreeFromZip(file)
-          allNodes.push({ name: file.name, path: file.name, type: 'folder', children: zipNodes })
-        } else if (ext === '.rar') {
-          const rarNodes = await buildTreeFromRAR(file)
-          allNodes.push({ name: file.name, path: file.name, type: 'folder', children: rarNodes })
+        const name = file.name.toLowerCase()
+        const isArchive = ARCHIVE_TYPES.some(ext => name.endsWith(ext))
+
+        if (isArchive) {
+          setProcessingFiles(true)
+          let archiveNodes: TreeNode[] = []
+          
+          // Try ZIP first (faster), fall back to libarchive for other formats
+          if (name.endsWith('.zip')) {
+            try {
+              archiveNodes = await buildTreeFromZip(file)
+            } catch {
+              archiveNodes = await buildTreeFromArchive(file)
+            }
+          } else {
+            archiveNodes = await buildTreeFromArchive(file)
+          }
+
+          if (archiveNodes.length > 0) {
+            allNodes.push({ 
+              name: file.name, 
+              path: file.name, 
+              type: 'folder', 
+              children: archiveNodes 
+            })
+          } else {
+            // If extraction failed, show as single file
+            allNodes.push({ 
+              name: file.name, 
+              path: file.name, 
+              type: 'file', 
+              file 
+            })
+          }
         } else {
-          allNodes.push({ name: file.name, path: file.name, type: 'file', file })
+          allNodes.push({ 
+            name: file.name, 
+            path: file.name, 
+            type: 'file', 
+            file 
+          })
         }
       }
+
       setTreeNodes(allNodes)
+    } catch (err) {
+      console.error('File processing error:', err)
     } finally {
       setProcessingFiles(false)
     }
@@ -440,14 +497,14 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                   Drop files here or click to browse
                 </div>
                 <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  ZIP · RAR · EAR · WAR · PDF · DOCX — max 50MB
+                  ZIP · RAR · 7Z · TAR · PDF · DOCX — max 50MB
                 </div>
               </div>
               <input
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept=".zip,.rar,.ear,.war,.pdf,.docx,.doc"
+                accept=".zip,.rar,.tar,.gz,.7z,.ear,.war,.pdf,.docx,.doc"
                 style={{ display: 'none' }}
                 onChange={async e => {
                   if (e.target.files) await processFiles(Array.from(e.target.files))

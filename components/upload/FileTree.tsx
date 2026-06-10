@@ -31,6 +31,8 @@ function getFileIcon(name: string) {
     case 'rar': return { icon: <IconZip size={16} color="#ff5a5a" style={style} />, badge: 'RAR', color: '#ff5a5a', bg: 'rgba(255,90,90,0.1)' }
     case 'war': return { icon: <IconZip size={16} color="#a89cff" style={style} />, badge: 'WAR', color: '#a89cff', bg: 'rgba(168,156,255,0.1)' }
     case 'ear': return { icon: <IconZip size={16} color="#3dffa0" style={style} />, badge: 'EAR', color: '#3dffa0', bg: 'rgba(61,255,160,0.1)' }
+    case 'gz': case 'tar': return { icon: <IconZip size={16} color="#f0c060" style={style} />, badge: 'TAR', color: '#f0c060', bg: 'rgba(240,192,96,0.1)' }
+    case '7z': return { icon: <IconZip size={16} color="#a89cff" style={style} />, badge: '7Z', color: '#a89cff', bg: 'rgba(168,156,255,0.1)' }
     default: return { icon: <IconFile size={16} color="var(--text-muted)" style={style} />, badge: ext?.toUpperCase() || 'FILE', color: 'var(--text-muted)', bg: 'rgba(255,255,255,0.05)' }
   }
 }
