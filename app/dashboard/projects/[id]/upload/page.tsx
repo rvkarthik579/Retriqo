@@ -178,10 +178,8 @@ export default function UploadPage({ params }: { params: { id: string } }) {
 
       for (const file of validFiles) {
         const name = file.name.toLowerCase()
-        const isArchive = ['.zip', '.rar', '.tar', '.gz', '.7z', '.ear', '.war']
-          .some(ext => name.endsWith(ext))
-
-        if (isArchive) {
+        
+        if (name.endsWith('.zip')) {
           try {
             const formData = new FormData()
             formData.append('file', file)
@@ -255,7 +253,26 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               type: 'file', file 
             })
           }
+        } else if (
+          name.endsWith('.rar') || 
+          name.endsWith('.7z') || 
+          name.endsWith('.tar') ||
+          name.endsWith('.gz')
+        ) {
+          // RAR/7Z/TAR — upload as single file, show hint
+          setExtractionError(
+            `"${file.name}" is a ${name.split('.').pop()?.toUpperCase()} file. ` +
+            `File tree preview is only available for ZIP files. ` +
+            `The file will still be uploaded and QR generated correctly.`
+          )
+          allNodes.push({ 
+            name: file.name, 
+            path: file.name, 
+            type: 'file', 
+            file 
+          })
         } else {
+          // PDF, DOCX etc — single file
           allNodes.push({ 
             name: file.name, path: file.name, 
             type: 'file', file 
@@ -264,6 +281,11 @@ export default function UploadPage({ params }: { params: { id: string } }) {
       }
 
       setTreeNodes(allNodes)
+      
+      // Auto advance logic
+      if (!allNodes.some(n => n.type === 'folder')) {
+        setCurrentStep(2) // Jump straight to Settings
+      }
     } finally {
       setProcessingFiles(false)
     }

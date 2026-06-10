@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createExtractorFromData } from 'node-unrar-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,20 +25,6 @@ export async function POST(request: NextRequest) {
             name: parts[parts.length - 1],
             path: path,
             size: 0
-          })
-        }
-      })
-    } else if (fileName.endsWith('.rar')) {
-      const extractor = await createExtractorFromData({ data: arrayBuffer })
-      const list = extractor.getFileList()
-      const fileList = [...list.fileHeaders]
-      
-      fileList.forEach(header => {
-        if (!header.flags.directory) {
-          files.push({
-            name: header.name.split('/').pop() || header.name,
-            path: header.name,
-            size: header.packSize
           })
         }
       })
