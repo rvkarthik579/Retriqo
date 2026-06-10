@@ -15,30 +15,14 @@ import {
 } from '@tabler/icons-react'
 import { QRCodeSVG } from 'qrcode.react'
 
-let archiveInitialized = false
-
-async function initArchive() {
-  if (archiveInitialized) return
-  try {
-    // @ts-expect-error: missing type definitions
-    const { Archive } = await import('libarchive.js/main.js')
-    await Archive.init({ workerUrl: '/worker-bundle.js' })
-    archiveInitialized = true
-    return Archive
-  } catch (err) {
-    console.error('Archive init failed:', err)
-    return null
-  }
-}
-
 const STEPS = ['Upload', 'Select Files', 'Settings', 'Generate']
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 const ACCEPTED_TYPES = [
-  '.zip', '.rar', '.tar', '.gz', '.7z', '.ear', 
-  '.war', '.pdf', '.docx', '.doc', '.tar.gz'
+  '.zip', '.rar', '.tar', '.gz', '.7z', 
+  '.ear', '.war', '.pdf', '.docx', '.doc'
 ]
 
-const ARCHIVE_TYPES = ['.zip', '.rar', '.tar', '.gz', '.7z', '.ear', '.war']
+const EXPANDABLE_TYPES = ['.zip']
 
 interface GeneratedQR {
   qrUniqueId: string
@@ -58,7 +42,6 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   const [dragging, setDragging] = useState(false)
   const [processingFiles, setProcessingFiles] = useState(false)
   const [extractionError, setExtractionError] = useState('')
-  const [extractingArchiveType, setExtractingArchiveType] = useState('ZIP')
   
   // Step 1: Upload (includes optional status)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
@@ -177,59 +160,10 @@ export default function UploadPage({ params }: { params: { id: string } }) {
     return rootNodes
   }
 
-  async function buildTreeFromArchive(file: File): Promise<TreeNode[]> {
-    try {
-      await initArchive()
-      // @ts-expect-error: missing type definitions
-      const { Archive } = await import('libarchive.js/main.js')
-      const archive = await Archive.open(file)
-      const obj = await archive.extractFiles()
-      
-      const rootNodes: TreeNode[] = []
-      const folderMap = new Map<string, TreeNode>()
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const processEntry = (entry: any, path: string) => {
-        if (entry instanceof File) {
-          const parts = path.split('/')
-          const fileName = parts[parts.length - 1]
-          if (!fileName || fileName.startsWith('.')) return
-
-          if (parts.length === 1) {
-            rootNodes.push({ name: fileName, path, type: 'file', file: entry })
-          } else {
-            let parentList = rootNodes
-            let currentPath = ''
-            for (let i = 0; i < parts.length - 1; i++) {
-              currentPath = i === 0 ? parts[i] : currentPath + '/' + parts[i]
-              let folder = folderMap.get(currentPath)
-              if (!folder) {
-                folder = { name: parts[i], path: currentPath, type: 'folder', children: [] }
-                folderMap.set(currentPath, folder)
-                parentList.push(folder)
-              }
-              parentList = folder.children!
-            }
-            parentList.push({ name: fileName, path, type: 'file', file: entry })
-          }
-        } else if (typeof entry === 'object') {
-          Object.keys(entry).forEach(key => {
-            processEntry(entry[key], path ? path + '/' + key : key)
-          })
-        }
-      }
-
-      processEntry(obj, '')
-      return rootNodes
-    } catch (err) {
-      console.error('Archive extraction failed:', err)
-      return []
-    }
-  }
-
   async function processFiles(files: File[]) {
     setProcessingFiles(true)
     setExtractionError('')
+    
     try {
       const validFiles = files.filter(f => {
         const name = f.name.toLowerCase()
@@ -237,62 +171,34 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                f.size <= MAX_FILE_SIZE
       })
 
-      if (validFiles.length === 0) {
-        setProcessingFiles(false)
-        return
-      }
-      
+      if (validFiles.length === 0) return
       setUploadedFiles(validFiles)
-      const allNodes: TreeNode[] = []
-      let containsArchive = false
 
-      const extractWithTimeout = async (file: File) => {
-        return Promise.race([
-          buildTreeFromArchive(file),
-          new Promise<TreeNode[]>((_, reject) => 
-            setTimeout(() => reject(new Error('Extraction timed out')), 10000)
-          )
-        ])
-      }
+      const allNodes: TreeNode[] = []
 
       for (const file of validFiles) {
         const name = file.name.toLowerCase()
-        const isArchive = ARCHIVE_TYPES.some(ext => name.endsWith(ext))
-
-        if (isArchive) {
-          containsArchive = true
-          setExtractingArchiveType(name.split('.').pop()?.toUpperCase() || 'ZIP')
-          setProcessingFiles(true)
-          let archiveNodes: TreeNode[] = []
-          
-          if (name.endsWith('.zip')) {
-            try {
-              archiveNodes = await buildTreeFromZip(file)
-            } catch {
-              try {
-                archiveNodes = await extractWithTimeout(file)
-              } catch {
-                archiveNodes = []
-              }
+        
+        if (name.endsWith('.zip')) {
+          // ZIP — full tree expansion
+          try {
+            const zipNodes = await buildTreeFromZip(file)
+            if (zipNodes.length > 0) {
+              allNodes.push({ 
+                name: file.name, 
+                path: file.name, 
+                type: 'folder', 
+                children: zipNodes 
+              })
+            } else {
+              allNodes.push({ 
+                name: file.name, 
+                path: file.name, 
+                type: 'file', 
+                file 
+              })
             }
-          } else {
-            try {
-              archiveNodes = await extractWithTimeout(file)
-            } catch {
-              archiveNodes = []
-            }
-          }
-
-          if (archiveNodes.length > 0) {
-            allNodes.push({ 
-              name: file.name, 
-              path: file.name, 
-              type: 'folder', 
-              children: archiveNodes 
-            })
-          } else {
-            setExtractionError("Could not expand this archive automatically. \nThe file will be uploaded as a single item.")
-            containsArchive = false
+          } catch (err) {
             allNodes.push({ 
               name: file.name, 
               path: file.name, 
@@ -300,7 +206,26 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               file 
             })
           }
+        } else if (
+          name.endsWith('.rar') || 
+          name.endsWith('.7z') || 
+          name.endsWith('.tar') ||
+          name.endsWith('.gz')
+        ) {
+          // RAR/7Z/TAR — upload as single file, show hint
+          setExtractionError(
+            `"${file.name}" is a ${name.split('.').pop()?.toUpperCase()} file. ` +
+            `File tree preview is only available for ZIP files. ` +
+            `The file will still be uploaded and QR generated correctly.`
+          )
+          allNodes.push({ 
+            name: file.name, 
+            path: file.name, 
+            type: 'file', 
+            file 
+          })
         } else {
+          // PDF, DOCX etc — single file
           allNodes.push({ 
             name: file.name, 
             path: file.name, 
@@ -311,14 +236,12 @@ export default function UploadPage({ params }: { params: { id: string } }) {
       }
 
       setTreeNodes(allNodes)
-      setProcessingFiles(false)
       
       // Auto advance logic
-      if (!containsArchive) {
+      if (!allNodes.some(n => n.type === 'folder')) {
         setCurrentStep(2) // Jump straight to Settings
       }
-    } catch (err) {
-      console.error('File processing error:', err)
+    } finally {
       setProcessingFiles(false)
     }
   }
@@ -605,7 +528,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                   borderTopColor: 'transparent',
                   animation: 'spin 600ms linear infinite'
                 }} />
-                Extracting {extractingArchiveType} archive...
+                Extracting files...
               </div>
             )}
 
@@ -613,12 +536,20 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               <div style={{
                 display: 'flex', alignItems: 'flex-start', gap: 10,
                 padding: '12px 16px',
-                background: 'rgba(255,90,90,0.08)',
-                border: '1px solid rgba(255,90,90,0.2)',
-                borderRadius: 8, textAlign: 'left'
+                background: 'rgba(240,192,96,0.06)',
+                border: '1px solid rgba(240,192,96,0.2)',
+                borderRadius: 8, marginTop: 12
               }}>
-                <IconAlertCircle size={16} color="var(--danger)" style={{ flexShrink: 0, marginTop: 2 }} />
-                <span style={{ fontSize: '0.875rem', color: 'var(--danger)', whiteSpace: 'pre-line' }}>{extractionError}</span>
+                <span style={{color: '#f0c060', fontSize: 14, flexShrink: 0}}>⚠</span>
+                <div>
+                  <p style={{fontSize: 13, color: '#f0c060', marginBottom: 4}}>
+                    {extractionError}
+                  </p>
+                  <p style={{fontSize: 12, color: '#5e5c80'}}>
+                    Tip: Convert to ZIP to see the full file tree and 
+                    select individual files for separate QR codes.
+                  </p>
+                </div>
               </div>
             )}
 
