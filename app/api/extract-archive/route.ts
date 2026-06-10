@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Unrar from 'node-unrar-js'
+import { createExtractorFromData } from 'node-unrar-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,13 +11,13 @@ export async function POST(request: NextRequest) {
     }
 
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const uint8Array = new Uint8Array(arrayBuffer)
     const fileName = file.name.toLowerCase()
     const files: { name: string; path: string; size: number }[] = []
 
     if (fileName.endsWith('.zip')) {
       const JSZip = (await import('jszip')).default
-      const zip = await JSZip.loadAsync(buffer)
+      const zip = await JSZip.loadAsync(uint8Array)
       
       Object.keys(zip.files).forEach(path => {
         const zipFile = zip.files[path]
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         }
       })
     } else if (fileName.endsWith('.rar')) {
-      const extractor = await Unrar.createExtractorFromData({ data: buffer })
+      const extractor = await createExtractorFromData({ data: uint8Array })
       const list = extractor.getFileList()
       const fileList = [...list.fileHeaders]
       
