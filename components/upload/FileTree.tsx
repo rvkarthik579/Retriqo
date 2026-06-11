@@ -18,7 +18,9 @@ export interface TreeNode {
 interface FileTreeProps {
   nodes: TreeNode[]
   selectedPaths: Set<string>
+  customTitles: Map<string, string>
   onToggle: (path: string, file?: File) => void
+  onTitleChange: (path: string, title: string) => void
 }
 
 function getFileIcon(name: string) {
@@ -38,12 +40,14 @@ function getFileIcon(name: string) {
 }
 
 function TreeNodeItem({ 
-  node, depth, selectedPaths, onToggle
+  node, depth, selectedPaths, customTitles, onToggle, onTitleChange
 }: { 
   node: TreeNode
   depth: number
   selectedPaths: Set<string>
+  customTitles: Map<string, string>
   onToggle: (path: string, file?: File) => void
+  onTitleChange: (path: string, title: string) => void
 }) {
   const [open, setOpen] = useState(depth < 2)
   const isSelected = selectedPaths.has(node.path)
@@ -78,7 +82,9 @@ function TreeNodeItem({
                 node={child}
                 depth={depth + 1}
                 selectedPaths={selectedPaths}
+                customTitles={customTitles}
                 onToggle={onToggle}
+                onTitleChange={onTitleChange}
               />
             ))}
           </div>
@@ -92,42 +98,70 @@ function TreeNodeItem({
   return (
     <div
       className={`file-tree-item ${isSelected ? 'selected' : ''}`}
-      style={{ paddingLeft: 8 + depth * 20 }}
-      onClick={() => onToggle(node.path, node.file)}
+      style={{ paddingLeft: 8 + depth * 20, alignItems: 'center' }}
     >
-      <div style={{ width: 14, flexShrink: 0 }} />
-      {icon}
-      <span style={{ 
-        color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)', 
-        fontSize: '0.875rem', flex: 1,
-        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-      }}>
-        {node.name}
-      </span>
-      <span style={{
-        fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem',
-        padding: '2px 6px', borderRadius: 4,
-        background: bg, color: color,
-        border: `1px solid ${color}33`,
-        flexShrink: 0
-      }}>
-        {badge}
-      </span>
+      <div 
+        style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer', gap: 8 }}
+        onClick={() => onToggle(node.path, node.file)}
+      >
+        {icon}
+        <span style={{ 
+          color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)', 
+          fontSize: '0.875rem',
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          maxWidth: isSelected ? '40%' : '100%'
+        }}>
+          {node.name}
+        </span>
+      </div>
+
       {isSelected && (
-        <div style={{
-          width: 18, height: 18,
-          background: 'var(--accent)', borderRadius: 4,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        <input 
+          type="text"
+          placeholder="Custom Title (Optional)"
+          value={customTitles.get(node.path) || ''}
+          onChange={(e) => onTitleChange(node.path, e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            flex: 1,
+            background: 'var(--bg-hover)',
+            border: '1px solid var(--border)',
+            color: 'var(--text-primary)',
+            padding: '4px 8px',
+            fontSize: '0.8rem',
+            borderRadius: 4,
+            marginLeft: 8,
+            marginRight: 8
+          }}
+        />
+      )}
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} onClick={() => onToggle(node.path, node.file)}>
+        <span style={{
+          fontFamily: 'JetBrains Mono, monospace', fontSize: '0.65rem',
+          padding: '2px 6px', borderRadius: 4,
+          background: bg, color: color,
+          border: `1px solid ${color}33`,
           flexShrink: 0
         }}>
-          <IconCheck size={11} color="white" />
-        </div>
-      )}
+          {badge}
+        </span>
+        {isSelected && (
+          <div style={{
+            width: 18, height: 18,
+            background: 'var(--accent)', borderRadius: 4,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0
+          }}>
+            <IconCheck size={11} color="white" />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-export default function FileTree({ nodes, selectedPaths, onToggle }: FileTreeProps) {
+export default function FileTree({ nodes, selectedPaths, customTitles, onToggle, onTitleChange }: FileTreeProps) {
   if (nodes.length === 0) return null
 
   return (
@@ -158,7 +192,9 @@ export default function FileTree({ nodes, selectedPaths, onToggle }: FileTreePro
             node={node}
             depth={0}
             selectedPaths={selectedPaths}
+            customTitles={customTitles}
             onToggle={onToggle}
+            onTitleChange={onTitleChange}
           />
         ))}
       </div>

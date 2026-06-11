@@ -28,6 +28,7 @@ interface GeneratedQR {
   qrUniqueId: string
   machineName: string
   fileName: string
+  displayTitle: string
   status: 'pass' | 'fail' | 'needs_attention'
   expiryDate: string | null
   generatedDate: string
@@ -52,6 +53,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   // Step 2: Select Files
   const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
   const [selectedFiles, setSelectedFiles] = useState<Map<string, File>>(new Map())
+  const [customTitles, setCustomTitles] = useState<Map<string, string>>(new Map())
   const [totalFiles, setTotalFiles] = useState(0)
   
   // Step 3: Settings
@@ -312,6 +314,12 @@ export default function UploadPage({ params }: { params: { id: string } }) {
     setSelectedFiles(newFiles)
   }
 
+  function handleTitleChange(path: string, title: string) {
+    const newTitles = new Map(customTitles)
+    newTitles.set(path, title)
+    setCustomTitles(newTitles)
+  }
+
   async function loadProjectName() {
     const supabase = getSupabaseBrowserClient()
     const { data } = await supabase.from('projects').select('machine_name').eq('id', projectId).single()
@@ -419,10 +427,17 @@ export default function UploadPage({ params }: { params: { id: string } }) {
 
         if (qrErr) throw new Error(qrErr.message)
 
+        let displayTitle = customTitles.get(path)?.trim() || ''
+        if (!displayTitle) {
+          // If no custom title, parse the path for nested files (e.g., Folder/Subfolder/file.pdf -> Folder / Subfolder / file.pdf)
+          displayTitle = path.split('/').join(' / ')
+        }
+
         generated.push({
           qrUniqueId,
           machineName: machine,
           fileName: file.name,
+          displayTitle,
           status: reportStatus || 'pass',
           expiryDate,
           generatedDate: new Date().toISOString(),
@@ -600,25 +615,32 @@ export default function UploadPage({ params }: { params: { id: string } }) {
 
             {uploadedFiles.length > 0 && !processingFiles && (
               <div className="animate-slide-down">
-                <div style={{ 
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  background: 'var(--bg-hover)', borderRadius: 8, padding: '12px 16px',
-                  border: '1px solid var(--border)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                    <IconCheck size={16} color="var(--success)" />
-                    <span>{uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''} uploaded successfully</span>
+                <div style={{ marginTop: 24 }}>
+                  <div style={{ 
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                    marginBottom: 16 
+                  }}>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                      {selectedPaths.size} files selected
+                    </span>
+                    <button
+                      onClick={deselectAll}
+                      style={{
+                        background: 'none', border: 'none', color: 'var(--text-muted)',
+                        fontSize: '0.875rem', cursor: 'pointer', fontFamily: 'JetBrains Mono, monospace',
+                        textDecoration: 'underline'
+                      }}
+                    >
+                      Clear All
+                    </button>
                   </div>
-                  <button
-                    onClick={() => { setUploadedFiles([]); setTreeNodes([]); setSelectedPaths(new Set()); setSelectedFiles(new Map()) }}
-                    style={{ 
-                      background: 'none', border: 'none', cursor: 'pointer',
-                      color: 'var(--text-muted)', fontSize: '0.8125rem',
-                      display: 'flex', alignItems: 'center', gap: 6
-                    }}
-                  >
-                    <IconX size={14} /> Clear
-                  </button>
+                  <FileTree 
+                    nodes={treeNodes}
+                    selectedPaths={selectedPaths}
+                    customTitles={customTitles}
+                    onToggle={handleToggleFile}
+                    onTitleChange={handleTitleChange}
+                  />
                 </div>
               </div>
             )}
@@ -860,269 +882,154 @@ export default function UploadPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* STEP 4: Generate */}
+        {/* STEP 4: Generate (Success) */}
         {currentStep === 3 && (
-          <div>
-            {generatedQRs.length === 0 ? (
-              <div style={{textAlign: 'center', padding: '40px 0'}}>
+          <div className="animate-fade-up">
+            {generating ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0' }}>
                 <div style={{
-                  width: 100, height: 100,
-                  background: 'rgba(108,99,255,0.1)',
-                  border: '1px solid rgba(108,99,255,0.2)',
-                  borderRadius: 24, margin: '0 auto 32px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  boxShadow: '0 0 40px rgba(108,99,255,0.2)'
-                }}>
-                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" 
-                    stroke="#a89cff" strokeWidth="1.5">
-                    <rect x="3" y="3" width="7" height="7"/>
-                    <rect x="14" y="3" width="7" height="7"/>
-                    <rect x="3" y="14" width="7" height="7"/>
-                    <rect x="14" y="14" width="3" height="3"/>
-                  </svg>
-                </div>
-
-                <h2 style={{
-                  fontFamily: 'Geist, sans-serif',
-                  fontSize: 28, fontWeight: 700,
-                  marginBottom: 8, letterSpacing: '-0.02em'
-                }}>Ready to Generate</h2>
-                
-                <p style={{color: '#9896b8', fontSize: 15, marginBottom: 40}}>
-                  {selectedFiles.size || uploadedFiles.length} QR code
-                  {(selectedFiles.size || uploadedFiles.length) !== 1 ? 's' : ''} will be created
+                  width: 40, height: 40, borderRadius: '50%',
+                  border: '3px solid rgba(108,99,255,0.2)',
+                  borderTopColor: 'var(--accent)',
+                  animation: 'spin 1s linear infinite',
+                  marginBottom: 24
+                }} />
+                <h2 className="font-geist" style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: 8 }}>
+                  Generating QR Codes...
+                </h2>
+                <p style={{ color: 'var(--text-muted)', marginBottom: 24 }}>
+                  Uploading files and creating secure links
                 </p>
-
-                <div style={{
-                  display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
-                  gap: 12, maxWidth: 480, margin: '0 auto 40px', textAlign: 'left'
-                }}>
-                  {[
-                    { 
-                      label: 'Status', 
-                      value: (reportStatus || 'pass') === 'pass' ? '✓ Pass' 
-                        : reportStatus === 'fail' ? '✕ Fail' 
-                        : '⚠ Needs Attention',
-                      color: (reportStatus || 'pass') === 'pass' ? '#3dffa0' 
-                        : reportStatus === 'fail' ? '#ff5a5a' 
-                        : '#f0c060'
-                    },
-                    { 
-                      label: 'Expires', 
-                      value: expiryDate 
-                        ? new Date(expiryDate).toLocaleDateString() 
-                        : 'Never',
-                      color: '#f0eeff'
-                    },
-                    { 
-                      label: 'PIN Protected', 
-                      value: requirePin ? 'Yes' : 'No',
-                      color: requirePin ? '#a89cff' : '#5e5c80'
-                    },
-                    { 
-                      label: 'Files', 
-                      value: `${selectedFiles.size || uploadedFiles.length} file${(selectedFiles.size || uploadedFiles.length) !== 1 ? 's' : ''}`,
-                      color: '#f0eeff'
-                    },
-                  ].map(item => (
-                    <div key={item.label} style={{
-                      background: '#0d0f1a',
-                      border: '1px solid rgba(255,255,255,0.07)',
-                      borderRadius: 10, padding: '14px 16px'
-                    }}>
-                      <p style={{
-                        fontFamily: 'JetBrains Mono, monospace',
-                        fontSize: 10, color: '#5e5c80',
-                        letterSpacing: '0.1em', textTransform: 'uppercase',
-                        marginBottom: 6
-                      }}>{item.label}</p>
-                      <p style={{
-                        fontSize: 15, fontWeight: 500,
-                        color: item.color
-                      }}>{item.value}</p>
-                    </div>
-                  ))}
+                <div style={{ width: '100%', maxWidth: 300, background: 'var(--bg-base)', borderRadius: 8, height: 8, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', background: 'var(--accent)',
+                    width: `${uploadProgress}%`, transition: 'width 200ms ease'
+                  }} />
                 </div>
-
-                {generateError && (
-                  <div style={{
-                    display: 'flex', alignItems: 'flex-start', gap: 10,
-                    padding: '12px 16px', maxWidth: 480, margin: '0 auto 24px',
-                    background: 'rgba(255,90,90,0.08)',
-                    border: '1px solid rgba(255,90,90,0.2)',
-                    borderRadius: 8, textAlign: 'left'
-                  }}>
-                    <IconAlertCircle size={16} color="var(--danger)" style={{ flexShrink: 0, marginTop: 2 }} />
-                    <span style={{ fontSize: '0.875rem', color: 'var(--danger)' }}>{generateError}</span>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleGenerate}
-                  disabled={generating}
-                  style={{
-                    width: '100%', maxWidth: 480,
-                    padding: '18px', borderRadius: 10,
-                    background: generating ? '#3a3670' : '#6c63ff',
-                    color: 'white', border: 'none',
-                    fontSize: 16, fontWeight: 600,
-                    fontFamily: 'Geist, sans-serif',
-                    cursor: generating ? 'not-allowed' : 'pointer',
-                    transition: 'all 200ms ease',
-                    boxShadow: generating ? 'none' : '0 0 32px rgba(108,99,255,0.4)',
-                    display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', gap: 12,
-                    margin: '0 auto'
-                  }}
+              </div>
+            ) : generateError ? (
+              <div style={{ textAlign: 'center', padding: '40px 0' }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,90,90,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <IconAlertCircle color="var(--danger)" size={24} />
+                </div>
+                <h3 style={{ color: 'var(--danger)', marginBottom: 8 }}>Generation Failed</h3>
+                <p style={{ color: 'var(--text-secondary)' }}>{generateError}</p>
+                <button 
+                  className="btn btn-secondary" 
+                  style={{ marginTop: 24 }}
+                  onClick={() => setGenerating(false)}
                 >
-                  {generating ? (
-                    <>
-                      <div style={{
-                        width: 18, height: 18, borderRadius: '50%',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        borderTopColor: 'white',
-                        animation: 'spin 600ms linear infinite'
-                      }} />
-                      Generating... {uploadProgress}%
-                    </>
-                  ) : (
-                    <>
-                      <svg width="20" height="20" viewBox="0 0 24 24" 
-                        fill="none" stroke="currentColor" strokeWidth="2">
-                        <rect x="3" y="3" width="7" height="7"/>
-                        <rect x="14" y="3" width="7" height="7"/>
-                        <rect x="3" y="14" width="7" height="7"/>
-                        <rect x="14" y="14" width="3" height="3"/>
-                      </svg>
-                      Generate QR Codes
-                    </>
-                  )}
+                  Try Again
                 </button>
-
-                {generating && (
-                  <div style={{
-                    maxWidth: 480, margin: '16px auto 0',
-                    height: 4, background: 'rgba(255,255,255,0.05)',
-                    borderRadius: 2, overflow: 'hidden'
-                  }}>
-                    <div style={{
-                      height: '100%', background: '#6c63ff',
-                      borderRadius: 2, width: `${uploadProgress}%`,
-                      transition: 'width 300ms ease',
-                      boxShadow: '0 0 8px rgba(108,99,255,0.6)'
-                    }} />
-                  </div>
-                )}
               </div>
             ) : (
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-                  <div>
-                    <h2 className="font-geist" style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: 4 }}>
-                      ✓ QR Codes Generated!
-                    </h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                      {generatedQRs.length} QR code{generatedQRs.length !== 1 ? 's' : ''} ready to print and stick
-                    </p>
+              <div className="print-container">
+                <div className="no-print" style={{ textAlign: 'center', marginBottom: 40 }}>
+                  <div style={{
+                    width: 56, height: 56, borderRadius: '50%',
+                    background: 'rgba(61,255,160,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 24px'
+                  }}>
+                    <IconCheck size={28} color="var(--success)" />
                   </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Link
-                      href={`/dashboard/projects/${projectId}`}
-                      className="btn btn-secondary btn-sm"
+                  <h2 className="font-geist" style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 8 }}>
+                    Success! {generatedQRs.length} QR Code{generatedQRs.length === 1 ? '' : 's'} Generated
+                  </h2>
+                  <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
+                    Your files are safely uploaded and ready to scan.
+                  </p>
+                  
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => window.print()}
+                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
                     >
-                      View Project
-                    </Link>
+                      🖨️ Print Batch Layout
+                    </button>
                   </div>
                 </div>
 
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                  gap: 16
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: 24
                 }}>
-                  {generatedQRs.map((qr) => (
-                    <div key={qr.qrUniqueId} style={{
-                      background: '#0d0f1a',
-                      border: '1px solid rgba(255,255,255,0.07)',
-                      borderRadius: 12, padding: 24,
-                      display: 'flex', flexDirection: 'column',
-                      alignItems: 'center', gap: 16,
-                      transition: 'border-color 200ms ease'
-                    }}>
-                      <div style={{
-                        background: 'white', padding: 12,
-                        borderRadius: 8
-                      }}>
-                        <QRCodeSVG 
-                          value={`${window.location.origin}/scan/${qr.qrUniqueId}`}
-                          size={160}
-                        />
-                      </div>
+                  {generatedQRs.map((qr, i) => {
+                    const scanUrl = `${window.location.origin}/scan/${qr.qrUniqueId}`
+                    
+                    return (
+                      <div key={i} className="card print-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        
+                        <div style={{ marginBottom: 16, textAlign: 'center', width: '100%' }}>
+                          <h4 style={{ 
+                            fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)',
+                            marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                          }} title={qr.displayTitle}>
+                            {qr.displayTitle}
+                          </h4>
+                          <div style={{ 
+                            fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)',
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                          }}>
+                            {qr.fileName}
+                          </div>
+                        </div>
 
-                      <span style={{
-                        fontFamily: 'JetBrains Mono, monospace',
-                        fontSize: 11, fontWeight: 700,
-                        letterSpacing: '0.08em', textTransform: 'uppercase',
-                        padding: '4px 12px', borderRadius: 20,
-                        background: qr.status === 'pass' ? 'rgba(61,255,160,0.1)'
-                          : qr.status === 'fail' ? 'rgba(255,90,90,0.1)'
-                          : 'rgba(240,192,96,0.1)',
-                        color: qr.status === 'pass' ? '#3dffa0'
-                          : qr.status === 'fail' ? '#ff5a5a'
-                          : '#f0c060',
-                        border: `1px solid ${qr.status === 'pass' ? 'rgba(61,255,160,0.2)'
-                          : qr.status === 'fail' ? 'rgba(255,90,90,0.2)'
-                          : 'rgba(240,192,96,0.2)'}`
-                      }}>
-                        {qr.status === 'pass' ? '✓ Pass' 
-                          : qr.status === 'fail' ? '✕ Fail' 
-                          : '⚠ Needs Attention'}
-                      </span>
+                        <div style={{
+                          background: 'white',
+                          padding: 16,
+                          borderRadius: 12,
+                          marginBottom: 20
+                        }}>
+                          <QRCodeSVG
+                            value={scanUrl}
+                            size={160}
+                            level="H"
+                            includeMargin={false}
+                          />
+                        </div>
 
-                      <div style={{textAlign: 'center', width: '100%'}}>
-                        <p style={{
-                          fontFamily: 'Geist, sans-serif',
-                          fontWeight: 600, fontSize: 14,
-                          marginBottom: 4, overflow: 'hidden',
-                          textOverflow: 'ellipsis', whiteSpace: 'nowrap'
-                        }}>{qr.fileName}</p>
-                        <p style={{
+                        <div style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'var(--bg-base)',
+                          borderRadius: 8,
                           fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: 10, color: '#5e5c80', letterSpacing: '0.08em'
-                        }}>ID: {qr.qrUniqueId}</p>
-                      </div>
+                          fontSize: '0.75rem',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                            <span>ID:</span>
+                            <span style={{ color: 'var(--text-primary)' }}>{qr.qrUniqueId}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span>Machine:</span>
+                            <span style={{ color: 'var(--text-primary)' }}>{qr.machineName}</span>
+                          </div>
+                        </div>
 
-                      <div style={{
-                        width: '100%', padding: '10px 12px',
-                        background: 'rgba(255,255,255,0.03)',
-                        borderRadius: 6, textAlign: 'center'
-                      }}>
-                        <p style={{
-                          fontFamily: 'JetBrains Mono, monospace',
-                          fontSize: 10, color: '#5e5c80',
-                          textTransform: 'uppercase', letterSpacing: '0.08em',
-                          marginBottom: 4
-                        }}>Expires</p>
-                        <p style={{fontSize: 13, color: '#9896b8'}}>
-                          {qr.expiryDate 
-                            ? new Date(qr.expiryDate).toLocaleDateString()
-                            : 'Never'}
-                        </p>
+                        <div className="no-print" style={{ display: 'flex', gap: 8, marginTop: 16, width: '100%' }}>
+                          <button 
+                            className="btn btn-secondary"
+                            style={{ flex: 1, padding: '8px', fontSize: '0.8rem' }}
+                            onClick={() => {
+                              navigator.clipboard.writeText(scanUrl)
+                            }}
+                          >
+                            Copy Link
+                          </button>
+                        </div>
                       </div>
+                    )
+                  })}
+                </div>
 
-                      <button style={{
-                        width: '100%', padding: '10px',
-                        background: 'rgba(108,99,255,0.1)',
-                        border: '1px solid rgba(108,99,255,0.2)',
-                        borderRadius: 8, color: '#a89cff',
-                        fontSize: 13, cursor: 'pointer',
-                        fontFamily: 'Inter, sans-serif',
-                        transition: 'all 150ms ease'
-                      }}>
-                        Download QR
-                      </button>
-                    </div>
-                  ))}
+                <div className="no-print" style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid var(--border)', textAlign: 'center' }}>
+                  <Link href={`/dashboard/projects/${projectId}`} className="btn btn-primary">
+                    Return to Project Dashboard
+                  </Link>
                 </div>
               </div>
             )}
