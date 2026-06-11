@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import JSZip from 'jszip'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
 
 import { uploadFile } from '@/lib/storage'
@@ -11,18 +10,13 @@ import FileTree, { TreeNode } from '@/components/upload/FileTree'
 import Link from 'next/link'
 import {
   IconUpload, IconCheck, IconArrowLeft, IconArrowRight,
-  IconAlertCircle, IconX
+  IconAlertCircle
 } from '@tabler/icons-react'
 import { QRCodeSVG } from 'qrcode.react'
 
 const STEPS = ['Upload', 'Select Files', 'Settings', 'Generate']
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
-const ACCEPTED_TYPES = [
-  '.zip', '.rar', '.tar', '.gz', '.7z', 
-  '.ear', '.war', '.pdf', '.docx', '.doc'
-]
-
-const EXPANDABLE_TYPES = ['.zip']
+const ACCEPTED_TYPES = ['.pdf', '.doc', '.docx', '.zip', '.rar', '.7z', '.tar', '.gz', '.war', '.ear']
 
 interface GeneratedQR {
   qrUniqueId: string
@@ -107,59 +101,6 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   function deselectAll() {
     setSelectedPaths(new Set())
     setSelectedFiles(new Map())
-  }
-
-  async function buildTreeFromZip(file: File): Promise<TreeNode[]> {
-    const zip = new JSZip()
-    const contents = await zip.loadAsync(file)
-    const folderMap = new Map<string, TreeNode>()
-    const rootNodes: TreeNode[] = []
-
-    const entries = Object.keys(contents.files)
-      .filter(path => !contents.files[path].dir && 
-        !path.startsWith('__MACOSX') &&
-        !path.includes('.DS_Store'))
-      .sort()
-
-    const fileObjects = await Promise.all(
-      entries.map(async (path) => {
-        const parts = path.split('/')
-        const fileName = parts[parts.length - 1]
-        if (!fileName) return null
-        const blob = await contents.files[path].async('blob')
-        return { path, parts, fileName, file: new File([blob], fileName) }
-      })
-    )
-
-    for (const item of fileObjects) {
-      if (!item) continue
-      const { path, parts, fileName, file: fileObj } = item
-
-      if (parts.length === 1) {
-        rootNodes.push({ name: fileName, path, type: 'file', file: fileObj })
-      } else {
-        let parentList = rootNodes
-        let currentPath = ''
-        for (let i = 0; i < parts.length - 1; i++) {
-          currentPath = i === 0 ? parts[i] : currentPath + '/' + parts[i]
-          let folder = folderMap.get(currentPath)
-          if (!folder) {
-            folder = { 
-              name: parts[i], 
-              path: currentPath, 
-              type: 'folder', 
-              children: [] 
-            }
-            folderMap.set(currentPath, folder)
-            parentList.push(folder)
-          }
-          parentList = folder.children!
-        }
-        parentList.push({ name: fileName, path, type: 'file', file: fileObj })
-      }
-    }
-
-    return rootNodes
   }
 
   async function processFiles(files: File[]) {
@@ -372,7 +313,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
       const generated: GeneratedQR[] = []
       let processed = 0
 
-      for (const { file } of filesToProcess) {
+      for (const { file, path } of filesToProcess) {
         setUploadProgress(Math.round((processed / filesToProcess.length) * 90))
 
         const { path: storagePath, url, error: uploadErr } = await uploadFile(
@@ -757,7 +698,9 @@ export default function UploadPage({ params }: { params: { id: string } }) {
             <FileTree 
               nodes={treeNodes}
               selectedPaths={selectedPaths}
+              customTitles={customTitles}
               onToggle={handleToggleFile}
+              onTitleChange={handleTitleChange}
             />
 
             <button
@@ -882,10 +825,37 @@ export default function UploadPage({ params }: { params: { id: string } }) {
           </div>
         )}
 
-        {/* STEP 4: Generate (Success) */}
+        {/* STEP 4: Generate */}
         {currentStep === 3 && (
           <div className="animate-fade-up">
-            {generating ? (
+            {generatedQRs.length === 0 && !generating && !generateError ? (
+              <div style={{textAlign: 'center', padding: '40px 0'}}>
+                <div style={{
+                  width: 80, height: 80, borderRadius: '50%',
+                  background: 'rgba(108,99,255,0.1)', border: '1px solid rgba(108,99,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 24px'
+                }}>
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                    <rect x="14" y="14" width="3" height="3"/>
+                  </svg>
+                </div>
+                <h2 className="font-geist" style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 8 }}>Ready to Generate</h2>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
+                  {selectedFiles.size || uploadedFiles.length} QR code{(selectedFiles.size || uploadedFiles.length) !== 1 ? 's' : ''} will be created
+                </p>
+                <button
+                  onClick={handleGenerate}
+                  className="btn btn-primary btn-lg"
+                  style={{ width: '100%', maxWidth: 300, margin: '0 auto', display: 'flex', justifyContent: 'center' }}
+                >
+                  Generate QR Codes
+                </button>
+              </div>
+            ) : generating ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 0' }}>
                 <div style={{
                   width: 40, height: 40, borderRadius: '50%',

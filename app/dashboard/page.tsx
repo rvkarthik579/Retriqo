@@ -95,16 +95,6 @@ export default function DashboardPage() {
     
     const supabase = getSupabaseBrowserClient()
     
-    // Get all files for this project first
-    const { data: files } = await supabase
-      .from('files')
-      .select('file_path')
-      .eq('report_id', supabase
-        .from('reports')
-        .select('id')
-        .eq('project_id', projectId)
-      )
-
     // Delete files from storage
     const { data: reportData } = await supabase
       .from('reports')
