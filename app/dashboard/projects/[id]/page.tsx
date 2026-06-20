@@ -6,8 +6,8 @@ import { getSupabaseBrowserClient } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import {
   IconArrowLeft, IconUpload, IconAlertTriangle, IconFile,
-  IconMapPin, IconCategory, IconCalendar,
-  IconClock
+  IconMapPin, IconCategory, IconCalendar, IconClock, IconDownload,
+  IconCopy, IconCheck, IconLock, IconLockOpen, IconQrcode
 } from '@tabler/icons-react'
 
 const statusConfig = {
@@ -29,6 +29,7 @@ interface ReportFile {
   file_path: string
   file_size?: number
   file_type?: string
+  created_at: string
   qr_codes?: Array<{ id: string; qr_unique_id: string; expiry_date: string | null; is_active: boolean; password_hash?: string }>
 }
 
@@ -49,6 +50,8 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true)
   const [revokeModal, setRevokeModal] = useState(false)
   const [revoking, setRevoking] = useState(false)
+  const [scanCounts, setScanCounts] = useState<Map<string, number>>(new Map())
+  const [copiedQR, setCopiedQR] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -65,14 +68,31 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         .from('reports')
         .select(`
           id, status, remarks, next_inspection_date, created_at, version_number,
-          files(id, file_name, file_path, file_size, file_type,
+          files(id, file_name, file_path, file_size, file_type, created_at,
             qr_codes(id, qr_unique_id, expiry_date, is_active, password_hash)
           )
         `)
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
 
-      if (reps) setReports(reps)
+      if (reps) {
+        setReports(reps)
+        const qrIds = reps.flatMap(report =>
+          (report.files || []).flatMap(file => (file.qr_codes || []).map(qr => qr.id))
+        )
+        if (qrIds.length > 0) {
+          const { data: logs } = await supabase
+            .from('scan_logs')
+            .select('qr_id, was_blocked')
+            .in('qr_id', qrIds)
+
+          const counts = new Map<string, number>()
+          logs?.forEach(log => {
+            if (!log.was_blocked) counts.set(log.qr_id, (counts.get(log.qr_id) || 0) + 1)
+          })
+          setScanCounts(counts)
+        }
+      }
       setLoading(false)
     }
     load()
@@ -104,6 +124,41 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
+  function scanUrl(qrId: string) {
+    return `${window.location.origin}/scan/${qrId}`
+  }
+
+  async function copyScanLink(qrId: string) {
+    await navigator.clipboard.writeText(scanUrl(qrId))
+    setCopiedQR(qrId)
+    window.setTimeout(() => setCopiedQR(current => current === qrId ? null : current), 1800)
+  }
+
+  function downloadQR(qrId: string, fileName: string) {
+    const svg = document.getElementById(`project-qr-${qrId}`)
+    if (!(svg instanceof SVGSVGElement)) return
+
+    const markup = new XMLSerializer().serializeToString(svg)
+    const serialized = markup.includes('xmlns=') ? markup : markup.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+    const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`
+    const image = new Image()
+    image.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 1024
+      canvas.height = 1024
+      const context = canvas.getContext('2d')
+      if (!context) return
+      context.fillStyle = '#ffffff'
+      context.fillRect(0, 0, canvas.width, canvas.height)
+      context.drawImage(image, 64, 64, 896, 896)
+      const anchor = document.createElement('a')
+      anchor.download = `${fileName.replace(/[^a-z0-9._-]+/gi, '-')}-QR.png`
+      anchor.href = canvas.toDataURL('image/png')
+      anchor.click()
+    }
+    image.src = source
+  }
+
   if (loading) {
     return (
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -127,6 +182,9 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
   )
 
   const masterQRUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/dashboard/projects/${projectId}`
+  const fileRecords = reports.flatMap(report =>
+    (report.files || []).map(file => ({ file, report }))
+  )
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -175,24 +233,106 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      {/* Master QR */}
-      <div className="card" style={{ padding: 24, marginBottom: 32, display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
-        <div style={{ background: 'white', padding: 12, borderRadius: 10 }}>
-          <QRCodeSVG value={masterQRUrl} size={100} bgColor="white" fgColor="#07080f" level="M" />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Master QR Code</span>
-            <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', padding: '2px 8px', borderRadius: 4, background: 'rgba(61,255,160,0.1)', color: 'var(--success)', border: '1px solid rgba(61,255,160,0.2)' }}>PERMANENT</span>
+      {/* File-level QR codes */}
+      <section style={{ marginBottom: 40 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
+          <div>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--accent-light)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 6 }}>
+              Ready for the floor
+            </div>
+            <h2 className="font-geist" style={{ fontSize: '1.25rem', fontWeight: 650, marginBottom: 4 }}>File QR Codes</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Download, print, or share the QR for each controlled document.</p>
           </div>
-          <h3 className="font-geist" style={{ fontSize: '1rem', fontWeight: 600, marginBottom: 4 }}>
-            {project.machine_name}
-          </h3>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-            This QR code links to this project page and never expires. Print and stick it on the machine.
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            {fileRecords.length} file{fileRecords.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {fileRecords.length === 0 ? (
+          <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+            <IconQrcode size={38} color="var(--text-muted)" style={{ margin: '0 auto 14px' }} />
+            <h3 className="font-geist" style={{ marginBottom: 8 }}>No file QRs yet</h3>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 20 }}>Upload files to generate the first set of work-ready QR codes.</p>
+            <Link href={`/dashboard/projects/${projectId}/upload`} className="btn btn-primary" style={{ display: 'inline-flex' }}>
+              <IconUpload size={16} /> Upload Files
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 390px), 1fr))', gap: 14 }}>
+            {fileRecords.map(({ file, report }) => {
+              const qr = file.qr_codes?.[0]
+              if (!qr) return null
+              const expired = !!qr.expiry_date && new Date(qr.expiry_date) < new Date()
+              const stateLabel = !qr.is_active ? 'Revoked' : expired ? 'Expired' : 'Active'
+              const stateColor = qr.is_active && !expired ? 'var(--success)' : 'var(--danger)'
+
+              return (
+                <article key={file.id} className="card" style={{ padding: 18, borderColor: 'rgba(255,255,255,0.1)' }}>
+                  <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+                    <div style={{ background: '#fff', padding: 10, borderRadius: 8, flexShrink: 0, lineHeight: 0 }}>
+                      <QRCodeSVG
+                        id={`project-qr-${qr.qr_unique_id}`}
+                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/scan/${qr.qr_unique_id}`}
+                        size={116}
+                        bgColor="#ffffff"
+                        fgColor="#07080f"
+                        level="H"
+                      />
+                    </div>
+
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                        <span style={{ width: 7, height: 7, borderRadius: '50%', background: stateColor, boxShadow: `0 0 0 3px color-mix(in srgb, ${stateColor} 14%, transparent)` }} />
+                        <span style={{ fontFamily: 'JetBrains Mono, monospace', color: stateColor, fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{stateLabel}</span>
+                      </div>
+                      <h3 title={file.file_name} style={{ fontSize: '0.98rem', fontWeight: 650, lineHeight: 1.35, marginBottom: 5, overflowWrap: 'anywhere' }}>{file.file_name}</h3>
+                      <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.68rem', color: 'var(--text-muted)', marginBottom: 12 }}>{qr.qr_unique_id}</div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '7px 10px', fontSize: '0.76rem' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Expires</span>
+                        <span style={{ color: 'var(--text-secondary)', textAlign: 'right' }}>{qr.expiry_date ? new Date(qr.expiry_date).toLocaleDateString() : 'Never'}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>PIN</span>
+                        <span style={{ color: 'var(--text-secondary)', textAlign: 'right', display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
+                          {qr.password_hash ? <IconLock size={12} /> : <IconLockOpen size={12} />}{qr.password_hash ? 'Yes' : 'No'}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)' }}>Scans</span>
+                        <span style={{ color: 'var(--text-secondary)', textAlign: 'right' }}>{scanCounts.get(qr.id) || 0}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>Created</span>
+                        <span style={{ color: 'var(--text-secondary)', textAlign: 'right' }}>{new Date(file.created_at || report.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+                    <button onClick={() => downloadQR(qr.qr_unique_id, file.file_name)} className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}>
+                      <IconDownload size={14} /> Download QR
+                    </button>
+                    <button onClick={() => copyScanLink(qr.qr_unique_id)} className="btn btn-secondary btn-sm" style={{ justifyContent: 'center' }}>
+                      {copiedQR === qr.qr_unique_id ? <IconCheck size={14} color="var(--success)" /> : <IconCopy size={14} />}
+                      {copiedQR === qr.qr_unique_id ? 'Copied' : 'Copy Link'}
+                    </button>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        )}
+      </section>
+
+      {/* Secondary project QR */}
+      <details className="card" style={{ padding: '16px 18px', marginBottom: 32 }}>
+        <summary style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 600 }}>
+          Project page QR (secondary)
+        </summary>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap', paddingTop: 16 }}>
+          <div style={{ background: 'white', padding: 9, borderRadius: 8, lineHeight: 0 }}>
+            <QRCodeSVG value={masterQRUrl} size={84} bgColor="white" fgColor="#07080f" level="M" />
+          </div>
+          <p style={{ flex: 1, minWidth: 220, color: 'var(--text-muted)', fontSize: '0.8125rem', lineHeight: 1.6 }}>
+            Opens this dashboard page. Use the file QRs above for machine labels and document access.
           </p>
         </div>
-      </div>
+      </details>
 
       {/* Reports Timeline */}
       <div>

@@ -10,10 +10,11 @@ import FileTree, { TreeNode } from '@/components/upload/FileTree'
 import Link from 'next/link'
 import {
   IconUpload, IconCheck, IconArrowLeft, IconArrowRight,
-  IconAlertCircle
+  IconAlertCircle, IconDownload
 } from '@tabler/icons-react'
 import { QRCodeSVG } from 'qrcode.react'
 import JSZip from 'jszip'
+import type { QRLayout } from '@/components/pdf/QRLabelPDF'
 
 const STEPS = ['Upload', 'Select Files', 'Settings', 'Generate']
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
@@ -56,6 +57,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   const [expiryDate, setExpiryDate] = useState<string | null>(getExpiryFromPreset('90d'))
   const [requirePin, setRequirePin] = useState(false)
   const [pin, setPin] = useState('')
+  const [qrLayout, setQrLayout] = useState<QRLayout>(4)
   
   // Step 4: Generate
   const [generating, setGenerating] = useState(false)
@@ -63,10 +65,62 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   const [generateError, setGenerateError] = useState('')
   const [projectName, setProjectName] = useState('')
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [exportingPDF, setExportingPDF] = useState(false)
 
   useEffect(() => {
     setExpiryDate(getExpiryFromPreset(expiryPreset))
   }, [expiryPreset])
+
+  function svgToPngDataUrl(svg: SVGSVGElement): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const markup = new XMLSerializer().serializeToString(svg)
+      const serialized = markup.includes('xmlns=') ? markup : markup.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"')
+      const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`
+      const image = new Image()
+      image.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = 1024
+        canvas.height = 1024
+        const context = canvas.getContext('2d')
+        if (!context) {
+          reject(new Error('Unable to prepare QR image'))
+          return
+        }
+        context.fillStyle = '#ffffff'
+        context.fillRect(0, 0, canvas.width, canvas.height)
+        context.drawImage(image, 64, 64, 896, 896)
+        resolve(canvas.toDataURL('image/png'))
+      }
+      image.onerror = () => reject(new Error('Unable to render QR image'))
+      image.src = source
+    })
+  }
+
+  async function downloadBatchPDF() {
+    setExportingPDF(true)
+    try {
+      const labels = await Promise.all(generatedQRs.map(async qr => {
+        const svg = document.getElementById(`generated-qr-${qr.qrUniqueId}`)
+        if (!(svg instanceof SVGSVGElement)) throw new Error(`QR ${qr.qrUniqueId} is not available`)
+        return { ...qr, qrDataUrl: await svgToPngDataUrl(svg) }
+      }))
+      const [{ pdf }, { QRLabelPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/components/pdf/QRLabelPDF'),
+      ])
+      const blob = await pdf(<QRLabelPDF labels={labels} layout={qrLayout} />).toBlob()
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = `${projectName || 'project'}-QR-labels-${qrLayout}-up.pdf`
+      anchor.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      setGenerateError(error instanceof Error ? error.message : 'PDF export failed')
+    } finally {
+      setExportingPDF(false)
+    }
+  }
 
   // Count total files recursively for UI
   useEffect(() => {
@@ -768,6 +822,43 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               border: '1px solid rgba(255,255,255,0.07)',
               borderRadius: 12, padding: 20
             }}>
+              <div style={{ marginBottom: 16 }}>
+                <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>QR Layout</p>
+                <p style={{ fontSize: 13, color: '#5e5c80' }}>Choose how many labels are placed on each A4 PDF page.</p>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(72px, 1fr))', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
+                {([1, 2, 4, 6, 9] as QRLayout[]).map(option => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setQrLayout(option)}
+                    aria-pressed={qrLayout === option}
+                    style={{
+                      minWidth: 72,
+                      padding: '12px 8px',
+                      borderRadius: 8,
+                      border: `1px solid ${qrLayout === option ? 'rgba(108,99,255,0.55)' : 'rgba(255,255,255,0.08)'}`,
+                      background: qrLayout === option ? 'rgba(108,99,255,0.13)' : '#07080f',
+                      color: qrLayout === option ? '#c1bbff' : '#9896b8',
+                      cursor: 'pointer',
+                      fontFamily: 'JetBrains Mono, monospace'
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: 18, fontWeight: 700, marginBottom: 3 }}>{option}</span>
+                    <span style={{ display: 'block', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>per page</span>
+                  </button>
+                ))}
+              </div>
+              <p style={{ marginTop: 12, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#5e5c80' }}>
+                {qrLayout === 1 ? 'Largest label - best for machine panels' : qrLayout <= 4 ? 'Standard label size - clear at arm\'s length' : 'Compact labels - best for document folders'}
+              </p>
+            </div>
+
+            <div style={{
+              background: '#0d0f1a',
+              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 12, padding: 20
+            }}>
               <div style={{
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between'
@@ -835,7 +926,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 </div>
                 <h2 className="font-geist" style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 8 }}>Ready to Generate</h2>
                 <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>
-                  {selectedFiles.size || uploadedFiles.length} QR code{(selectedFiles.size || uploadedFiles.length) !== 1 ? 's' : ''} will be created
+                  {selectedFiles.size || uploadedFiles.length} QR code{(selectedFiles.size || uploadedFiles.length) !== 1 ? 's' : ''} will be created · {qrLayout} per PDF page
                 </p>
                 <button
                   onClick={handleGenerate}
@@ -900,13 +991,14 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                     Your files are safely uploaded and ready to scan.
                   </p>
                   
-                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
                     <button
-                      className="btn btn-secondary"
-                      onClick={() => window.print()}
-                      style={{ background: 'var(--bg-hover)', color: 'var(--text-primary)' }}
+                      className="btn btn-primary"
+                      onClick={downloadBatchPDF}
+                      disabled={exportingPDF}
                     >
-                      🖨️ Print Batch Layout
+                      <IconDownload size={16} />
+                      {exportingPDF ? 'Preparing PDF...' : `Download PDF · ${qrLayout} per page`}
                     </button>
                   </div>
                 </div>
@@ -944,6 +1036,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                           marginBottom: 20
                         }}>
                           <QRCodeSVG
+                            id={`generated-qr-${qr.qrUniqueId}`}
                             value={scanUrl}
                             size={160}
                             level="H"
