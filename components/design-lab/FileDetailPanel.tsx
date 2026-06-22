@@ -8,9 +8,13 @@ import {
   Trash2,
   QrCode,
   TrendingUp,
+  Loader2,
 } from "lucide-react";
 import { useCanvasEffect } from "@/components/design-lab/CanvasEffectContext";
 import type { DesignLabFile } from "@/components/design-lab/types";
+import { QRCodeSVG } from "qrcode.react";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { useState } from "react";
 
 interface FileDetailPanelProps {
   file: DesignLabFile;
@@ -20,6 +24,59 @@ interface FileDetailPanelProps {
 export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps) {
   const { triggerRipple } = useCanvasEffect();
   const maxTrend = Math.max(...file.scanTrend, 1);
+  const [isDownloadingFile, setIsDownloadingFile] = useState(false);
+
+  const downloadQR = () => {
+    triggerRipple("#4A90E2");
+    if (!file.qrUniqueId) return;
+
+    const svg = document.getElementById(`detail-qr-${file.qrUniqueId}`);
+    if (!(svg instanceof SVGSVGElement)) return;
+
+    const markup = new XMLSerializer().serializeToString(svg);
+    const serialized = markup.includes('xmlns=') ? markup : markup.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    const source = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(serialized)}`;
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1024;
+      canvas.height = 1024;
+      const context = canvas.getContext('2d');
+      if (!context) return;
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 64, 64, 896, 896);
+      const anchor = document.createElement('a');
+      anchor.download = `${file.name.replace(/[^a-z0-9._-]+/gi, '-')}-QR.png`;
+      anchor.href = canvas.toDataURL('image/png');
+      anchor.click();
+    };
+    image.src = source;
+  };
+
+  const downloadFile = async () => {
+    if (!file.filePath) return;
+    setIsDownloadingFile(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data, error } = await supabase.storage.from('project_files').download(file.filePath);
+      if (error) throw error;
+      
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Failed to download file", err);
+      alert("Failed to download file");
+    } finally {
+      setIsDownloadingFile(false);
+    }
+  };
 
   return (
     <>
@@ -49,7 +106,19 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
               QR Code
             </p>
             <div className="flex aspect-square w-[240px] h-[240px] items-center justify-center rounded-2xl border border-black/10 bg-white p-6 shadow-lg">
-              <QrCode className="h-full w-full text-[#1A1A1A]" strokeWidth={0.75} />
+              {file.qrUniqueId ? (
+                <QRCodeSVG
+                  id={`detail-qr-${file.qrUniqueId}`}
+                  value={`${typeof window !== 'undefined' ? window.location.origin : ''}/scan/${file.qrUniqueId}`}
+                  size={192}
+                  bgColor="#ffffff"
+                  fgColor="#1A1A1A"
+                  level="H"
+                  className="h-full w-full"
+                />
+              ) : (
+                <QrCode className="h-full w-full text-black/20" strokeWidth={0.75} />
+              )}
             </div>
             <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-widest text-black/30">
               Scan to access file
@@ -97,15 +166,20 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
             </div>
 
             <div className="mt-auto flex flex-col gap-3 pt-8">
-              <button className="flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] py-3.5 text-white transition-transform hover:scale-[1.02] active:scale-[0.98]">
-                <Download className="h-4 w-4" />
+              <button 
+                onClick={downloadFile}
+                disabled={isDownloadingFile || !file.filePath}
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] py-3.5 text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+              >
+                {isDownloadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
-                  Download File
+                  {isDownloadingFile ? "Downloading..." : "Download File"}
                 </span>
               </button>
               <button
-                onClick={() => triggerRipple("#4A90E2")}
-                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5"
+                onClick={downloadQR}
+                disabled={!file.qrUniqueId}
+                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50"
               >
                 <QrCode className="h-4 w-4 text-black/50" />
                 <span className="font-mono text-[11px] font-medium uppercase tracking-widest">

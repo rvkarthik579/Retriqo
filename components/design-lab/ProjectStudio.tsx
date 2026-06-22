@@ -88,7 +88,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
             id, status,
             files(
               id, file_name, file_type, file_path, file_size, created_at,
-              qr_codes(qr_unique_id, expiry_date, is_active)
+              qr_codes(id, qr_unique_id, expiry_date, is_active)
             )
           `)
           .eq('project_id', project.id);
@@ -99,10 +99,41 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
           return;
         }
 
+        const qrIds: string[] = [];
+        reports?.forEach(report => {
+          report.files?.forEach((f: any) => {
+            const qr = f.qr_codes?.[0]; // Assume 1 QR per file
+            if (qr?.id) qrIds.push(qr.id);
+          });
+        });
+
+        const scanCounts = new Map<string, number>();
+        const lastScanDates = new Map<string, string>();
+
+        if (qrIds.length > 0) {
+          const { data: logs } = await supabase
+            .from('scan_logs')
+            .select('qr_id, was_blocked, created_at')
+            .in('qr_id', qrIds)
+            .order('created_at', { ascending: false });
+
+          logs?.forEach(log => {
+            if (!log.was_blocked) {
+              scanCounts.set(log.qr_id, (scanCounts.get(log.qr_id) || 0) + 1);
+              if (!lastScanDates.has(log.qr_id)) {
+                lastScanDates.set(log.qr_id, new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }));
+              }
+            }
+          });
+        }
+
         const mappedFiles: DesignLabFile[] = [];
         reports?.forEach(report => {
           report.files?.forEach((f: any) => {
             const qr = f.qr_codes?.[0]; // Assume 1 QR per file
+            const scans = qr ? (scanCounts.get(qr.id) || 0) : 0;
+            const lastScan = qr ? (lastScanDates.get(qr.id) || "Never") : "Never";
+
             mappedFiles.push({
               id: f.id,
               name: f.file_name,
@@ -116,11 +147,12 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
               rotation: 0,
               yOffset: 0,
               xOffset: 0,
-              scans: 0, // Needs scan_logs join if we want real data
-              lastScan: "Never",
-              scanTrend: [0,0,0,0,0,0,0],
-              recentActivity: ["Uploaded to Project QR"],
+              scans: scans,
+              lastScan: lastScan,
+              scanTrend: [0, 0, 0, 0, 0, 0, 0], // Not implemented historically
+              recentActivity: scans > 0 ? [`Last scanned: ${lastScan}`] : ["Uploaded to Project QR"],
               qrUniqueId: qr?.qr_unique_id,
+              filePath: f.file_path,
             });
           });
         });
@@ -132,6 +164,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
       } finally {
         setIsLoading(false);
       }
+
     }
 
     if (project.id) {
@@ -424,7 +457,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
           {activeTab === "analytics" && (
             <div className="flex h-64 w-full flex-col items-center justify-center rounded-2xl border border-black/5 bg-white text-black/40">
               <p className="font-mono text-[11px] uppercase tracking-widest">
-                Analytics Dashboard Coming Soon
+                Analytics are currently unavailable
               </p>
             </div>
           )}

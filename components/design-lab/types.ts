@@ -16,6 +16,7 @@ export interface DesignLabFile {
   scanTrend: number[];
   recentActivity: string[];
   qrUniqueId?: string;
+  filePath?: string;
 }
 
 export interface DesignLabProject {

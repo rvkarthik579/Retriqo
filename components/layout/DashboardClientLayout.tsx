@@ -41,10 +41,14 @@ export default function DashboardClientLayout({
   };
 
   const openProjects = () => {
-    router.push("/dashboard");
+    setIsSettingsOpen(false);
+    setIsAccountOpen(false);
+    router.push("/dashboard?view=projects");
   };
 
   const goHome = () => {
+    setIsSettingsOpen(false);
+    setIsAccountOpen(false);
     router.push("/dashboard");
   };
 

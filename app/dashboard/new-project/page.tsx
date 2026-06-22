@@ -67,7 +67,7 @@ export default function NewProjectPage() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+    <div className="legacy-light-theme" style={{ maxWidth: 600, margin: '0 auto' }}>
       {/* Back */}
       <Link 
         href="/dashboard" 

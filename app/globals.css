@@ -34,6 +34,20 @@
   --space-8: 64px;
 }
 
+.legacy-light-theme {
+  --bg-base: #F9F9F8;
+  --bg-card: #ffffff;
+  --bg-hover: rgba(0,0,0,0.02);
+  --accent: #4A90E2;
+  --accent-light: #7EBAFF;
+  --text-primary: #1A1A1A;
+  --text-secondary: rgba(26,26,26,0.7);
+  --text-muted: rgba(26,26,26,0.5);
+  --border: rgba(0,0,0,0.1);
+  --border-hover: rgba(0,0,0,0.15);
+  --border-active: rgba(74,144,226,0.4);
+}
+
 /* ============================================
    BASE RESET & GLOBAL STYLES
    ============================================ */

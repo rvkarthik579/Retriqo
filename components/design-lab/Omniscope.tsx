@@ -26,14 +26,14 @@ export default function Omniscope({ onFocusChange }: OmniscopeProps) {
   return (
     <motion.div layout className="relative z-40 mx-auto w-full max-w-4xl px-8">
       <input
-        ref={inputRef}
+        disabled
         type="text"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        placeholder="Search files, reports, projects and QR codes..."
-        className="w-full bg-transparent text-center font-[family-name:var(--font-instrument)] text-3xl text-[#1A1A1A] outline-none transition-all duration-500 ease-out placeholder:text-[#1A1A1A]/20 md:text-4xl lg:text-5xl"
+        placeholder="Search functionality coming soon..."
+        className="w-full bg-transparent text-center font-[family-name:var(--font-instrument)] text-3xl text-[#1A1A1A] outline-none transition-all duration-500 ease-out placeholder:text-[#1A1A1A]/20 disabled:cursor-not-allowed md:text-4xl lg:text-5xl"
       />
 
       {/* Elegant Underline indicating active focus */}

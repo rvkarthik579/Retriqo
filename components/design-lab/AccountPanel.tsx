@@ -2,6 +2,9 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Edit, LogOut, Key, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { useRouter } from "next/navigation";
 
 export default function AccountPanel({
   isOpen,
@@ -10,6 +13,32 @@ export default function AccountPanel({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const router = useRouter();
+  const [userEmail, setUserEmail] = useState<string>("Loading...");
+  const [userInitial, setUserInitial] = useState<string>("?");
+
+  useEffect(() => {
+    async function loadUser() {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setUserEmail(user.email);
+        setUserInitial(user.email.charAt(0).toUpperCase());
+      } else {
+        setUserEmail("Not logged in");
+      }
+    }
+    if (isOpen) {
+      loadUser();
+    }
+  }, [isOpen]);
+
+  const handleSignOut = async () => {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -47,56 +76,18 @@ export default function AccountPanel({
 
             <div className="flex-1 space-y-12 overflow-y-auto p-8">
               <div className="flex flex-col items-center gap-4 text-center">
-                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#1A1A1A] text-white shadow-lg">
-                  <User className="h-10 w-10" />
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#1A1A1A] text-white shadow-lg text-4xl font-[family-name:var(--font-instrument)]">
+                  {userInitial}
                 </div>
                 <div>
                   <h3 className="font-[family-name:var(--font-instrument)] text-3xl text-[#1A1A1A]">
-                    John Doe
+                    {userEmail.split('@')[0]}
                   </h3>
-                  <p className="text-sm text-black/60">john.doe@example.com</p>
+                  <p className="text-sm text-black/60">{userEmail}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  { label: "Total Storage Used", value: "4.2 GB" },
-                  { label: "Member Since", value: "Oct 2023" },
-                  { label: "Projects Created", value: "4" },
-                  { label: "Total Scans", value: "1,284" },
-                ].map((stat) => (
-                  <div key={stat.label} className="rounded-xl bg-black/5 p-4 text-center">
-                    <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-black/40">
-                      {stat.label}
-                    </p>
-                    <p className="font-[family-name:var(--font-instrument)] text-2xl text-[#1A1A1A]">
-                      {stat.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t border-black/5 pt-8">
-                <h4 className="mb-4 font-mono text-[10px] uppercase tracking-widest text-black/40">
-                  Recent Activity
-                </h4>
-                <div className="space-y-4 text-sm text-[#1A1A1A]/80">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-green-500" />
-                    <p>Scanned &quot;Machine 7 Inspection&quot; QR Code from Android</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
-                    <p>Uploaded 12 new files to &quot;Boiler Room Audit&quot;</p>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
-                    <p>Regenerated QR Code for &quot;Safety_Checklist.xlsx&quot;</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3 border-t border-black/5 pt-4">
+              <div className="flex flex-col gap-3 pt-4">
                 <button className="flex items-center gap-3 rounded-xl bg-black/5 p-4 transition-colors hover:bg-black/10">
                   <Edit className="h-4 w-4 text-black/60" />
                   <span className="text-sm font-medium">Edit Profile</span>
@@ -108,7 +99,7 @@ export default function AccountPanel({
               </div>
 
               <div className="pt-4">
-                <button className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-900/10 py-4 text-red-600 transition-colors hover:bg-red-50">
+                <button onClick={handleSignOut} className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-900/10 py-4 text-red-600 transition-colors hover:bg-red-50">
                   <LogOut className="h-4 w-4" />
                   <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
                     Logout

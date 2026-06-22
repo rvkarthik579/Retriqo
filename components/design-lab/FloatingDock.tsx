@@ -19,11 +19,19 @@ export default function FloatingDock({
       icon: Home,
       label: "Home",
       onClick: () => {
+        window.dispatchEvent(new CustomEvent('dashboard-nav', { detail: 'home' }));
         window.scrollTo({ top: 0, behavior: "smooth" });
         goHome();
       },
     },
-    { icon: LayoutGrid, label: "Projects", onClick: openProjects },
+    { 
+      icon: LayoutGrid, 
+      label: "Projects", 
+      onClick: () => {
+        window.dispatchEvent(new CustomEvent('dashboard-nav', { detail: 'projects' }));
+        openProjects();
+      } 
+    },
     { icon: User, label: "Account", onClick: openAccount },
     { icon: SettingsIcon, label: "Settings", onClick: openSettings },
   ];

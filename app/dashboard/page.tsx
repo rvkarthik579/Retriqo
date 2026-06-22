@@ -51,8 +51,45 @@ export default function DashboardPage() {
         lastActivity: new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
       }));
       setProjects(mapped);
+
+      // Handle auto-open from URL
+      if (typeof window !== 'undefined') {
+        const search = new URLSearchParams(window.location.search);
+        const projectIdParam = search.get('project');
+        if (projectIdParam) {
+          const p = mapped.find((proj: DesignLabProject) => proj.id === projectIdParam);
+          if (p) {
+            setSelectedProject(p);
+            // Remove param from URL cleanly
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+          }
+        }
+        
+        const viewParam = search.get('view');
+        if (viewParam === 'projects') {
+          setIsProjectsOpen(true);
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+        }
+      }
     }
     loadProjects();
+  }, []);
+
+  useEffect(() => {
+    const handleNav = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail === 'projects') {
+        setIsProjectsOpen(true);
+      } else if (customEvent.detail === 'home') {
+        setIsProjectsOpen(false);
+        setSelectedProject(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener('dashboard-nav', handleNav);
+    return () => window.removeEventListener('dashboard-nav', handleNav);
   }, []);
 
   const handleCreateProject = () => {
@@ -116,7 +153,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <section className="pb-40">
+      <section id="recent-projects" className="pb-40 pt-10 scroll-mt-24">
         <div className="mb-12 flex items-baseline justify-between border-b border-black/5 pb-4">
           <h2 className="font-[family-name:var(--font-instrument)] text-3xl text-[#1A1A1A]">
             Recent Projects

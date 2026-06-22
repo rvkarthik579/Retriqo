@@ -465,9 +465,9 @@ export default function UploadPage({ params }: { params: { id: string } }) {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto' }}>
+    <div className="legacy-light-theme" style={{ maxWidth: 800, margin: '0 auto' }}>
       <Link
-        href={`/dashboard/projects/${projectId}`}
+        href={`/dashboard?project=${projectId}`}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem',
@@ -1080,7 +1080,11 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 </div>
 
                 <div className="no-print" style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-                  <Link href={`/dashboard/projects/${projectId}`} className="btn btn-primary">
+                  <Link href={`/dashboard?project=${projectId}`} className="btn btn-primary" style={{
+                    background: '#1A1A1A', color: 'white', border: 'none',
+                    padding: '16px 32px', borderRadius: '12px', fontSize: '14px',
+                    fontWeight: 600, fontFamily: 'Inter, sans-serif'
+                  }}>
                     Return to Project Dashboard
                   </Link>
                 </div>
