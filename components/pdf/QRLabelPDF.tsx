@@ -74,11 +74,11 @@ const styles = StyleSheet.create({
 })
 
 const layoutConfig: Record<QRLayout, { columns: number; rows: number; qrSize: number; titleSize: number; fileSize: number; metaSize: number }> = {
-  1: { columns: 1, rows: 1, qrSize: 310, titleSize: 24, fileSize: 14, metaSize: 11 },
-  2: { columns: 1, rows: 2, qrSize: 190, titleSize: 17, fileSize: 11, metaSize: 9 },
-  4: { columns: 2, rows: 2, qrSize: 120, titleSize: 14, fileSize: 9, metaSize: 8 },
-  6: { columns: 2, rows: 3, qrSize: 86, titleSize: 12, fileSize: 8, metaSize: 7 },
-  9: { columns: 3, rows: 3, qrSize: 62, titleSize: 10, fileSize: 7, metaSize: 6 },
+  1: { columns: 1, rows: 1, qrSize: 500, titleSize: 20, fileSize: 12, metaSize: 10 },
+  2: { columns: 1, rows: 2, qrSize: 280, titleSize: 16, fileSize: 10, metaSize: 8 },
+  4: { columns: 2, rows: 2, qrSize: 220, titleSize: 12, fileSize: 8, metaSize: 7 },
+  6: { columns: 2, rows: 3, qrSize: 160, titleSize: 11, fileSize: 7, metaSize: 6 },
+  9: { columns: 3, rows: 3, qrSize: 110, titleSize: 9, fileSize: 6, metaSize: 5 },
 }
 
 function chunkLabels(labels: QRLabelData[], size: number) {

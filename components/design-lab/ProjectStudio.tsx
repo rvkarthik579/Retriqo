@@ -16,52 +16,7 @@ interface ProjectStudioProps {
   onClose: () => void;
 }
 
-const MOCK_PROJECT_FILES: DesignLabFile[] = [
-  {
-    id: "f1",
-    name: "Inspection_Report_M7.pdf",
-    type: "pdf",
-    projectName: "Machine 7 Inspection",
-    createdDate: "Aug 12, 2024",
-    expiryDate: "Feb 12, 2025",
-    uploadedBy: "Sarah Chen",
-    status: "Active",
-    date: "2 mins ago",
-    rotation: 0,
-    yOffset: 0,
-    xOffset: 0,
-    scans: 47,
-    lastScan: "Today, 9:14 AM",
-    scanTrend: [4, 7, 5, 12, 8, 15, 11],
-    recentActivity: [
-      "Scanned from iPhone — Field Site M7",
-      "Downloaded by J. Martinez",
-      "QR regenerated — Aug 28",
-    ],
-  },
-  {
-    id: "f2",
-    name: "Safety_Checklist.xlsx",
-    type: "spreadsheet",
-    projectName: "Machine 7 Inspection",
-    createdDate: "Jul 18, 2024",
-    expiryDate: "Jan 18, 2025",
-    uploadedBy: "Sarah Chen",
-    status: "Active",
-    date: "4 hours ago",
-    rotation: 0,
-    yOffset: 0,
-    xOffset: 0,
-    scans: 89,
-    lastScan: "Today, 7:02 AM",
-    scanTrend: [10, 14, 18, 12, 20, 16, 22],
-    recentActivity: [
-      "Scanned from iPad — Line A Floor",
-      "Shared via QR link",
-      "Scanned from iPhone — Safety Office",
-    ],
-  },
-];
+// Mock files removed
 
 export default function ProjectStudio({ project, onClose }: ProjectStudioProps) {
   const router = useRouter();
@@ -95,7 +50,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
 
         if (error) {
           console.error("Error fetching files:", error);
-          setProjectFiles(MOCK_PROJECT_FILES);
+          setProjectFiles([]);
           return;
         }
 
@@ -157,10 +112,10 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
           });
         });
 
-        setProjectFiles(mappedFiles.length > 0 ? mappedFiles : MOCK_PROJECT_FILES);
+        setProjectFiles(mappedFiles);
       } catch (err) {
         console.error("Failed to load project files:", err);
-        setProjectFiles(MOCK_PROJECT_FILES);
+        setProjectFiles([]);
       } finally {
         setIsLoading(false);
       }
@@ -262,9 +217,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
             </button>
 
             <div className="flex gap-3">
-              <button className="flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-widest text-black/40 transition-colors hover:bg-black/5 hover:text-black">
-                <Search className="h-4 w-4" />
-              </button>
+              {/* Search button temporarily removed for Phase 1 release */}
 
               <button
                 onClick={() => handlePrint()}
@@ -360,12 +313,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
                 </span>
                 <span className="text-lg">{project.qrCount}</span>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-black/40">
-                  Analytics
-                </span>
-                <span className="text-lg text-green-600">Active</span>
-              </div>
+              {/* Analytics header temporarily removed */}
               <div className="flex flex-col gap-1">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-black/40">
                   Last Activity
@@ -386,22 +334,35 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
             >
               Files & QR Codes
             </button>
-            <button
-              onClick={() => setActiveTab("analytics")}
-              className={`pb-4 font-mono text-[11px] font-bold uppercase tracking-widest transition-colors ${
-                activeTab === "analytics"
-                  ? "border-b-2 border-black text-black"
-                  : "text-black/40 hover:text-black/80"
-              }`}
-            >
-              Project Analytics
-            </button>
+            {/* Analytics tab temporarily removed */}
           </div>
 
           {activeTab === "files" && (
             <div className="space-y-4">
               {isLoading ? (
                 <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-black/20" /></div>
+              ) : projectFiles.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 px-4 rounded-2xl border border-dashed border-black/10 bg-white/50 text-center">
+                  <div className="rounded-full bg-[#1A1A1A]/5 p-4 mb-4">
+                    <FileText className="h-8 w-8 text-[#1A1A1A]/40" />
+                  </div>
+                  <h3 className="mb-2 font-[family-name:var(--font-instrument)] text-2xl text-[#1A1A1A]">No Files Yet</h3>
+                  <p className="mb-6 max-w-md text-sm text-black/50">
+                    Upload documents or spreadsheets to generate your first set of QR labels for {project.name}.
+                  </p>
+                  <button
+                    onClick={() => {
+                      triggerRipple("#2BBBAD");
+                      router.push(`/dashboard/projects/${project.id}/upload`);
+                    }}
+                    className="flex items-center gap-2 rounded-full bg-[#111111] px-6 py-3 text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="font-mono text-[11px] font-bold uppercase tracking-widest">
+                      Upload First File
+                    </span>
+                  </button>
+                </div>
               ) : (
                 projectFiles.map((file) => (
                   <motion.div

@@ -565,7 +565,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 borderRadius: 8,
                 fontFamily: 'JetBrains Mono, monospace',
                 fontSize: '0.8125rem',
-                color: '#a89cff'
+                color: 'var(--accent-light)'
               }}>
                 <div style={{
                   width: 14, height: 14, borderRadius: '50%',
@@ -590,7 +590,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                   <p style={{fontSize: 13, color: '#f0c060', marginBottom: 4}}>
                     {extractionError}
                   </p>
-                  <p style={{fontSize: 12, color: '#5e5c80'}}>
+                  <p style={{fontSize: 12, color: 'var(--text-muted)'}}>
                     Tip: Convert to ZIP to see the full file tree and 
                     select individual files for separate QR codes.
                   </p>
@@ -633,7 +633,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
             <div style={{marginTop: 24}}>
               <p style={{
                 fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 11, color: '#5e5c80',
+                fontSize: 11, color: 'var(--text-muted)',
                 letterSpacing: '0.08em', textTransform: 'uppercase',
                 marginBottom: 12
               }}>
@@ -666,7 +666,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                           ? s === 'Pass' ? '#3dffa0'
                           : s === 'Fail' ? '#ff5a5a'
                           : '#f0c060'
-                          : '#5e5c80',
+                          : 'var(--text-muted)',
                         fontSize: 13, fontWeight: 500,
                         cursor: 'pointer',
                         transition: 'all 150ms ease'
@@ -685,10 +685,10 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               onChange={e => setRemarks(e.target.value)}
               style={{
                 width: '100%', marginTop: 12,
-                background: '#07080f',
+                background: 'var(--bg-card)',
                 border: '1px solid rgba(255,255,255,0.07)',
                 borderRadius: 8, padding: '12px 14px',
-                color: '#f0eeff', fontSize: 13,
+                color: 'var(--text-primary)', fontSize: 13,
                 fontFamily: 'Inter, sans-serif',
                 resize: 'none', outline: 'none',
                 minHeight: 80
@@ -705,7 +705,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 fontFamily: 'Geist, sans-serif',
                 fontSize: 20, fontWeight: 700, marginBottom: 8
               }}>Select Files for QR Codes</h2>
-              <p style={{color: '#9896b8', fontSize: 14}}>
+              <p style={{color: 'var(--text-secondary)', fontSize: 14}}>
                 Pick which files get their own QR code. 
                 Each selected file = one scannable QR.
               </p>
@@ -717,7 +717,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
             }}>
               <span style={{
                 fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 11, color: '#5e5c80'
+                fontSize: 11, color: 'var(--text-muted)'
               }}>
                 {selectedPaths.size} of {totalFiles} files selected
               </span>
@@ -725,14 +725,14 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                 <button onClick={selectAll} style={{
                   background: 'rgba(108,99,255,0.1)',
                   border: '1px solid rgba(108,99,255,0.2)',
-                  color: '#a89cff', padding: '6px 12px',
+                  color: 'var(--accent-light)', padding: '6px 12px',
                   borderRadius: 6, fontSize: 12, cursor: 'pointer',
                   fontFamily: 'Inter, sans-serif'
                 }}>Select All</button>
                 <button onClick={deselectAll} style={{
                   background: 'transparent',
                   border: '1px solid rgba(255,255,255,0.07)',
-                  color: '#5e5c80', padding: '6px 12px',
+                  color: 'var(--text-muted)', padding: '6px 12px',
                   borderRadius: 6, fontSize: 12, cursor: 'pointer',
                   fontFamily: 'Inter, sans-serif'
                 }}>Clear</button>
@@ -752,7 +752,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               style={{
                 background: 'transparent',
                 border: 'none',
-                color: '#5e5c80',
+                color: 'var(--text-muted)',
                 fontSize: 13,
                 cursor: 'pointer',
                 fontFamily: 'Inter, sans-serif',
@@ -771,7 +771,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
             <div style={{marginBottom: 32}}>
               <p style={{
                 fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 11, color: '#5e5c80',
+                fontSize: 11, color: 'var(--text-muted)',
                 letterSpacing: '0.08em', textTransform: 'uppercase',
                 marginBottom: 16
               }}>QR Code Expiry</p>
@@ -796,7 +796,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                       background: expiryPreset === opt.value 
                         ? 'rgba(108,99,255,0.1)' 
                         : 'transparent',
-                      color: expiryPreset === opt.value ? '#a89cff' : '#5e5c80',
+                      color: expiryPreset === opt.value ? 'var(--accent-light)' : 'var(--text-muted)',
                       fontSize: 13, cursor: 'pointer',
                       fontFamily: 'Inter, sans-serif',
                       transition: 'all 150ms ease'
@@ -810,7 +810,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
               {expiryDate && (
                 <p style={{
                   fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 12, color: '#5e5c80'
+                  fontSize: 12, color: 'var(--text-muted)'
                 }}>
                   This QR will stop working on {new Date(expiryDate).toDateString()}
                 </p>
@@ -824,7 +824,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
             }}>
               <div style={{ marginBottom: 16 }}>
                 <p style={{ fontSize: 15, fontWeight: 500, marginBottom: 4 }}>QR Layout</p>
-                <p style={{ fontSize: 13, color: '#5e5c80' }}>Choose how many labels are placed on each A4 PDF page.</p>
+                <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>Choose how many labels are placed on each A4 PDF page.</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(72px, 1fr))', gap: 8, overflowX: 'auto', paddingBottom: 2 }}>
                 {([1, 2, 4, 6, 9] as QRLayout[]).map(option => (
@@ -838,8 +838,8 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                       padding: '12px 8px',
                       borderRadius: 8,
                       border: `1px solid ${qrLayout === option ? 'rgba(108,99,255,0.55)' : 'rgba(255,255,255,0.08)'}`,
-                      background: qrLayout === option ? 'rgba(108,99,255,0.13)' : '#07080f',
-                      color: qrLayout === option ? '#c1bbff' : '#9896b8',
+                      background: qrLayout === option ? 'rgba(108,99,255,0.13)' : 'var(--bg-card)',
+                      color: qrLayout === option ? '#c1bbff' : 'var(--text-secondary)',
                       cursor: 'pointer',
                       fontFamily: 'JetBrains Mono, monospace'
                     }}
@@ -849,7 +849,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                   </button>
                 ))}
               </div>
-              <p style={{ marginTop: 12, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#5e5c80' }}>
+              <p style={{ marginTop: 12, fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: 'var(--text-muted)' }}>
                 {qrLayout === 1 ? 'Largest label - best for machine panels' : qrLayout <= 4 ? 'Standard label size - clear at arm\'s length' : 'Compact labels - best for document folders'}
               </p>
             </div>
@@ -867,7 +867,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                   <p style={{fontSize: 15, fontWeight: 500, marginBottom: 4}}>
                     PIN Protection
                   </p>
-                  <p style={{fontSize: 13, color: '#5e5c80'}}>
+                  <p style={{fontSize: 13, color: 'var(--text-muted)'}}>
                     Require a 4-digit code to access this QR
                   </p>
                 </div>
@@ -886,10 +886,10 @@ export default function UploadPage({ params }: { params: { id: string } }) {
                     value={pin}
                     onChange={e => setPin(e.target.value.replace(/\D/g,'').slice(0,4))}
                     style={{
-                      background: '#07080f',
+                      background: 'var(--bg-card)',
                       border: '1px solid rgba(108,99,255,0.3)',
                       borderRadius: 8, padding: '12px 16px',
-                      color: '#f0eeff', fontSize: 24,
+                      color: 'var(--text-primary)', fontSize: 24,
                       fontFamily: 'JetBrains Mono, monospace',
                       letterSpacing: '0.4em', textAlign: 'center',
                       width: 160, outline: 'none'

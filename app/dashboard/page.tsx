@@ -32,7 +32,7 @@ export default function DashboardPage() {
         .from('projects')
         .select(`
           id, machine_name, created_at,
-          reports(id)
+          reports(id, files(id))
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -42,14 +42,17 @@ export default function DashboardPage() {
         return;
       }
 
-      const mapped = projectsData.map((p: any) => ({
-        id: p.id,
-        name: p.machine_name,
-        createdDate: new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-        filesCount: p.reports?.length || 0,
-        qrCount: p.reports?.length || 0, // Fallback until joined properly
-        lastActivity: new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
-      }));
+      const mapped = projectsData.map((p: any) => {
+        const filesCount = p.reports?.reduce((sum: number, r: any) => sum + (r.files?.length || 0), 0) || 0;
+        return {
+          id: p.id,
+          name: p.machine_name,
+          createdDate: new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+          filesCount,
+          qrCount: filesCount, // 1 QR per file
+          lastActivity: new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+        };
+      });
       setProjects(mapped);
 
       // Handle auto-open from URL
@@ -148,9 +151,7 @@ export default function DashboardPage() {
           </span>
         </button>
 
-        <div className="w-full">
-          <Omniscope onFocusChange={setIsSearchFocused} />
-        </div>
+        {/* Omniscope search temporarily hidden for Phase 1 release */}
       </header>
 
       <section id="recent-projects" className="pb-40 pt-10 scroll-mt-24">
