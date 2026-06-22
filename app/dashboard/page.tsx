@@ -1,275 +1,135 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { getSupabaseBrowserClient } from '@/lib/supabase'
-import MetricCard from '@/components/dashboard/MetricCard'
-import ProjectCard from '@/components/dashboard/ProjectCard'
-import { IconPlus, IconFolder } from '@tabler/icons-react'
-
-interface Project {
-  id: string
-  machine_name: string
-  location?: string
-  project_type: string
-  created_at: string
-  reports?: { status: string; created_at: string }[]
-}
+import { Inter, Instrument_Serif } from "next/font/google";
+import { useState, useEffect } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { AnimatePresence } from "framer-motion";
+import { Plus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import Omniscope from "@/components/design-lab/Omniscope";
+import ProjectsList from "@/components/design-lab/ProjectsList";
+import ProjectStudio from "@/components/design-lab/ProjectStudio";
+import Workbench from "@/components/design-lab/Workbench";
+import { useCanvasEffect } from "@/components/design-lab/CanvasEffectContext";
+import type { DesignLabProject } from "@/components/design-lab/types";
 
 export default function DashboardPage() {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [metrics, setMetrics] = useState({
-    totalProjects: 0,
-    activeQRs: 0,
-    totalScans: 0,
-    expiringSoon: 0,
-  })
+  const router = useRouter();
+  const [isProjectsOpen, setIsProjectsOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [projects, setProjects] = useState<DesignLabProject[]>([]);
+  const [selectedProject, setSelectedProject] = useState<DesignLabProject | null>(null);
+
+  const { triggerRipple } = useCanvasEffect();
 
   useEffect(() => {
-    async function load() {
-      const supabase = getSupabaseBrowserClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+    async function loadProjects() {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
 
-      // Fetch projects with latest report status
-      const { data: projectsData } = await supabase
+      const { data: projectsData, error } = await supabase
         .from('projects')
         .select(`
-          id, machine_name, location, project_type, created_at,
-          reports(id, status, created_at)
+          id, machine_name, created_at,
+          reports(id)
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false });
 
-      if (projectsData) setProjects(projectsData as Project[])
-
-      // Fetch QR metrics
-      const { data: qrData } = await supabase
-        .from('qr_codes')
-        .select('id, is_active, expiry_date')
-        .eq('user_id', user.id)
-
-      const activeQRs = qrData?.filter(q => q.is_active).length || 0
-      const now = new Date()
-      const soon = new Date()
-      soon.setDate(soon.getDate() + 30)
-      const expiringSoon = qrData?.filter(q => {
-        if (!q.expiry_date || !q.is_active) return false
-        const exp = new Date(q.expiry_date)
-        return exp > now && exp <= soon
-      }).length || 0
-
-      // Fetch scan count
-      const { count: scanCount } = await supabase
-        .from('scan_logs')
-        .select('id', { count: 'exact', head: true })
-        .in('qr_id', qrData?.map(q => q.id) || [])
-
-      setMetrics({
-        totalProjects: projectsData?.length || 0,
-        activeQRs,
-        totalScans: scanCount || 0,
-        expiringSoon,
-      })
-
-      setLoading(false)
-    }
-    load()
-  }, [])
-
-  function getProjectStatus(project: Project): 'pass' | 'fail' | 'needs_attention' | 'none' {
-    if (!project.reports || project.reports.length === 0) return 'none'
-    const latest = project.reports.sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )[0]
-    const s = latest.status?.toLowerCase()
-    if (s === 'pass') return 'pass'
-    if (s === 'fail') return 'fail'
-    if (s === 'needs_attention' || s === 'needs attention') return 'needs_attention'
-    return 'none'
-  }
-
-  async function deleteProject(projectId: string) {
-    if (!confirm('Delete this project? This will delete all reports, QR codes, and files permanently.')) return
-
-    const supabase = getSupabaseBrowserClient()
-
-    try {
-      // Get all report IDs for this project
-      const { data: reports } = await supabase
-        .from('reports')
-        .select('id')
-        .eq('project_id', projectId)
-
-      if (reports && reports.length > 0) {
-        const reportIds = reports.map(r => r.id)
-
-        // Get all file paths to delete from storage
-        const { data: files } = await supabase
-          .from('files')
-          .select('file_path')
-          .in('report_id', reportIds)
-
-        if (files && files.length > 0) {
-          const paths = files.map(f => f.file_path).filter(Boolean)
-          if (paths.length > 0) {
-            await supabase.storage
-              .from('project-qr-files')
-              .remove(paths)
-          }
-        }
+      if (error || !projectsData) {
+        console.error("Failed to load projects:", error);
+        return;
       }
 
-      // Delete project — cascade handles reports, files, qr_codes, scan_logs
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId)
-
-      if (error) {
-        console.error('Delete error:', error)
-        alert('Failed to delete project: ' + error.message)
-        return
-      }
-
-      // Only update UI after confirmed database deletion
-      setProjects(prev => prev.filter(p => p.id !== projectId))
-
-    } catch (err) {
-      console.error('Unexpected delete error:', err)
-      alert('Something went wrong. Please try again.')
+      const mapped = projectsData.map((p: any) => ({
+        id: p.id,
+        name: p.machine_name,
+        createdDate: new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+        filesCount: p.reports?.length || 0,
+        qrCount: p.reports?.length || 0, // Fallback until joined properly
+        lastActivity: new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+      }));
+      setProjects(mapped);
     }
-  }
+    loadProjects();
+  }, []);
+
+  const handleCreateProject = () => {
+    triggerRipple("#4A90E2");
+    router.push('/dashboard/new-project');
+  };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ 
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 32, paddingBottom: 24, borderBottom: '1px solid var(--border)'
-      }}>
-        <div>
-          <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 4 }}>
-            Dashboard
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem' }}>
-            Monitor and manage all your industrial assets
+    <>
+      <ProjectsList 
+        isOpen={isProjectsOpen} 
+        onClose={() => setIsProjectsOpen(false)} 
+        projects={projects} 
+        onSelectProject={setSelectedProject} 
+      />
+
+      <AnimatePresence>
+        {selectedProject && (
+          <ProjectStudio
+            project={selectedProject}
+            onClose={() => setSelectedProject(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <header className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center pb-24 pt-48 text-center">
+        <h1 className="mb-6 font-[family-name:var(--font-instrument)] text-8xl text-[#1A1A1A] tracking-tight md:text-9xl">
+          Project QR
+        </h1>
+        
+        <div className="max-w-2xl mx-auto flex flex-col items-center">
+          <h2 className="mb-10 font-mono text-sm font-semibold uppercase tracking-[0.2em] text-[#1A1A1A]">
+            Industrial File Tracking & QR Documentation
+          </h2>
+          <p className="text-lg font-medium leading-relaxed text-[#1A1A1A]/70 max-w-xl">
+            Store inspection reports, manuals, certificates and documentation.<br/>
+            Generate QR codes for selected files and access them instantly from any machine by scanning.
           </p>
         </div>
-        <Link href="/dashboard/new-project" className="btn btn-primary btn-sm">
-          <IconPlus size={16} />
-          New Project
-        </Link>
-      </div>
 
-      {/* Metrics */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: 16,
-        marginBottom: 40
-      }}>
-        <MetricCard label="Total Projects" value={metrics.totalProjects} loading={loading} />
-        <MetricCard label="Active QR Codes" value={metrics.activeQRs} color="accent" loading={loading} />
-        <MetricCard label="Total Scans" value={metrics.totalScans} loading={loading} />
-        <MetricCard 
-          label="Expiring Soon" 
-          value={metrics.expiringSoon} 
-          color={metrics.expiringSoon > 0 ? 'warning' : 'default'}
-          subtext="within 30 days"
-          loading={loading}
-        />
-      </div>
-
-      {/* Projects */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-          <h2 className="font-geist" style={{ fontSize: '1.1rem', fontWeight: 600 }}>
-            Your Projects
-          </h2>
-          <span style={{ 
-            fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', 
-            color: 'var(--text-muted)',
-            background: 'var(--bg-hover)',
-            padding: '4px 10px', borderRadius: 20
-          }}>
-            {projects.length} total
-          </span>
+        <div className="mt-14 mb-14 flex items-center justify-center gap-4 rounded-full border border-black/[0.06] bg-black/[0.02] px-8 py-3.5 text-xs font-mono tracking-[0.15em] uppercase text-black/30 backdrop-blur-sm">
+          <span className="text-[#1A1A1A] font-bold">Create Project</span>
+          <span>—</span>
+          <span className="text-[#1A1A1A] font-bold">Upload Files</span>
+          <span>—</span>
+          <span className="text-[#1A1A1A] font-bold">Generate QR Codes</span>
         </div>
 
-        {loading ? (
-          <div style={{ 
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: 16
-          }}>
-            {[...Array(6)].map((_, i) => (
-              <ProjectCard 
-                key={i} id="" machineName="" projectType="" 
-                reportCount={0} loading={true}
-              />
-            ))}
-          </div>
-        ) : projects.length === 0 ? (
-          /* Empty state */
-          <div className="card" style={{ 
-            padding: 64, textAlign: 'center',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20
-          }}>
-            <div style={{
-              width: 80, height: 80,
-              background: 'rgba(108,99,255,0.1)',
-              border: '1px solid rgba(108,99,255,0.2)',
-              borderRadius: 20,
-              display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <IconFolder size={36} color="var(--accent-light)" />
-            </div>
-            <div>
-              <h3 className="font-geist" style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 8 }}>
-                No projects yet
-              </h3>
-              <p style={{ color: 'var(--text-secondary)', maxWidth: 400, lineHeight: 1.7 }}>
-                Create your first project to start tracking industrial assets with QR-linked digital reports.
-              </p>
-            </div>
-            <Link href="/dashboard/new-project" className="btn btn-primary">
-              <IconPlus size={18} />
-              Create your first project
-            </Link>
-          </div>
-        ) : (
-          <div 
-            className="stagger-list"
-            style={{ 
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: 16
-            }}
-          >
-            {projects.map(project => (
-              <ProjectCard
-                key={project.id}
-                id={project.id}
-                machineName={project.machine_name}
-                location={project.location}
-                projectType={project.project_type}
-                status={getProjectStatus(project)}
-                reportCount={project.reports?.length || 0}
-                lastUpdated={
-                  project.reports && project.reports.length > 0
-                    ? project.reports.sort((a, b) => 
-                        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                      )[0].created_at
-                    : project.created_at
-                }
-                onDelete={() => deleteProject(project.id)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
+        <button
+          onClick={handleCreateProject}
+          className="mb-24 flex items-center gap-2 rounded-full bg-[#111111] px-10 py-4 text-white shadow-[0_10px_20px_-10px_rgba(0,0,0,0.3)] transition-transform hover:scale-105 active:scale-95"
+        >
+          <Plus className="h-5 w-5" />
+          <span className="font-mono text-sm font-bold uppercase tracking-widest">
+            Create Project
+          </span>
+        </button>
+
+        <div className="w-full">
+          <Omniscope onFocusChange={setIsSearchFocused} />
+        </div>
+      </header>
+
+      <section className="pb-40">
+        <div className="mb-12 flex items-baseline justify-between border-b border-black/5 pb-4">
+          <h2 className="font-[family-name:var(--font-instrument)] text-3xl text-[#1A1A1A]">
+            Recent Projects
+          </h2>
+          <span className="font-mono text-xs font-medium uppercase tracking-widest text-[#1A1A1A]/40">
+            Desk
+          </span>
+        </div>
+        <Workbench projects={projects.slice(0, 3)} onProjectOpen={(id) => {
+          const proj = projects.find(p => p.id === id);
+          if (proj) setSelectedProject(proj);
+        }} />
+      </section>
+    </>
+  );
 }

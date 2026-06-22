@@ -478,11 +478,11 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         Back to Project
       </Link>
 
-      <div style={{ marginBottom: 32 }}>
-        <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 8 }}>
+      <div className="mb-8 pt-6">
+        <h1 className="font-[family-name:var(--font-instrument)] text-5xl text-[#1A1A1A] mb-4">
           Upload Files
         </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
+        <p className="font-mono text-xs uppercase tracking-widest text-[#1A1A1A]/50">
           Create secure QR codes for your documents
         </p>
       </div>
@@ -506,7 +506,7 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         ))}
       </div>
 
-      <div className="card animate-fade-up" style={{ padding: 32 }}>
+      <div className="animate-fade-up rounded-3xl border border-black/[0.05] bg-white/70 p-10 shadow-2xl backdrop-blur-3xl">
 
         {/* STEP 1: Upload */}
         {currentStep === 0 && (

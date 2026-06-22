@@ -83,26 +83,26 @@ export default function NewProjectPage() {
       </Link>
 
       {/* Header */}
-      <div style={{ marginBottom: 32 }}>
-        <h1 className="font-geist" style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 8 }}>
+      <div className="mb-12 pt-20">
+        <h1 className="font-[family-name:var(--font-instrument)] text-5xl text-[#1A1A1A] mb-4">
           New Project
         </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
+        <p className="font-mono text-xs uppercase tracking-widest text-[#1A1A1A]/50">
           Create a project for an industrial asset or machine you want to track
         </p>
       </div>
 
       {/* Form */}
-      <div className="card animate-fade-up" style={{ padding: 32 }}>
+      <div className="animate-fade-up rounded-3xl border border-black/[0.05] bg-white/70 p-10 shadow-2xl backdrop-blur-3xl">
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div>
-            <label className="label">
-              Machine Name <span style={{ color: 'var(--danger)' }}>*</span>
+            <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-widest text-[#1A1A1A]/60">
+              Machine Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              className="input"
-              placeholder="e.g. Hydraulic Press Unit 4, Generator Block B"
+              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.02] px-4 py-3.5 text-sm font-medium text-[#1A1A1A] outline-none transition-colors placeholder:text-[#1A1A1A]/30 focus:border-[#4A90E2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(74,144,226,0.1)]"
+              placeholder="e.g. Hydraulic Press Unit 4"
               value={machineName}
               onChange={e => setMachineName(e.target.value)}
               autoFocus
@@ -110,36 +110,33 @@ export default function NewProjectPage() {
           </div>
 
           <div>
-            <label className="label">Location</label>
+            <label className="mb-2 block font-mono text-xs font-semibold uppercase tracking-widest text-[#1A1A1A]/60">
+              Location
+            </label>
             <input
               type="text"
-              className="input"
-              placeholder="e.g. Factory Floor A, Building 3 — optional"
+              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.02] px-4 py-3.5 text-sm font-medium text-[#1A1A1A] outline-none transition-colors placeholder:text-[#1A1A1A]/30 focus:border-[#4A90E2] focus:bg-white focus:shadow-[0_0_0_4px_rgba(74,144,226,0.1)]"
+              placeholder="e.g. Factory Floor A, Building 3 (optional)"
               value={location}
               onChange={e => setLocation(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="label">Project Type</label>
-            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <label className="mb-3 block font-mono text-xs font-semibold uppercase tracking-widest text-[#1A1A1A]/60">
+              Project Type
+            </label>
+            <div className="flex flex-wrap gap-2">
               {projectTypes.map(type => (
                 <button
                   key={type}
                   type="button"
                   onClick={() => setProjectType(type)}
-                  style={{
-                    padding: '10px 20px',
-                    borderRadius: 8,
-                    border: `1px solid ${projectType === type ? 'rgba(108,99,255,0.4)' : 'var(--border)'}`,
-                    background: projectType === type ? 'rgba(108,99,255,0.1)' : 'transparent',
-                    color: projectType === type ? 'var(--accent-light)' : 'var(--text-secondary)',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    fontFamily: 'Inter, sans-serif',
-                    transition: 'all 150ms ease',
-                    display: 'flex', alignItems: 'center', gap: 6
-                  }}
+                  className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+                    projectType === type
+                      ? "border-[#4A90E2] bg-[#4A90E2]/10 text-[#4A90E2]"
+                      : "border-black/[0.08] bg-white text-[#1A1A1A]/60 hover:bg-black/[0.02]"
+                  }`}
                 >
                   {projectType === type && <IconCheck size={14} />}
                   {type}
@@ -162,27 +159,21 @@ export default function NewProjectPage() {
           )}
 
           {/* Info */}
-          <div style={{
-            padding: '14px 16px',
-            background: 'rgba(108,99,255,0.05)',
-            border: '1px solid rgba(108,99,255,0.15)',
-            borderRadius: 8,
-            fontSize: '0.8125rem',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.6
-          }}>
+          <div className="rounded-xl border border-black/[0.05] bg-black/[0.02] p-4 text-xs font-medium leading-relaxed text-[#1A1A1A]/60">
             After creating the project, you'll be taken to the upload page to add your first inspection report and generate QR codes.
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
-            <Link href="/dashboard" className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+          <div className="mt-4 flex gap-3">
+            <Link 
+              href="/dashboard" 
+              className="flex flex-1 items-center justify-center rounded-xl border border-black/10 bg-white px-6 py-4 text-sm font-semibold text-[#1A1A1A] transition-colors hover:bg-black/5"
+            >
               Cancel
             </Link>
             <button
               type="submit"
-              className="btn btn-primary"
               disabled={loading}
-              style={{ flex: 2, justifyContent: 'center' }}
+              className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] px-6 py-4 text-sm font-semibold text-white transition-all hover:bg-black disabled:opacity-50"
             >
               {loading ? 'Creating...' : 'Create Project →'}
             </button>
