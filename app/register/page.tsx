@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { createBrowserClient } from '@supabase/ssr'
-import { IconBrandGoogle, IconQrcode, IconAlertCircle } from '@tabler/icons-react'
+import { IconBrandGoogle, IconAlertCircle, IconArrowLeft } from '@tabler/icons-react'
+import RoutingCanvas from '@/components/ui/RoutingCanvas'
 
 export default function RegisterPage() {
   const [error, setError] = useState('')
@@ -31,85 +32,74 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--bg-base)' }}>
-      <Link href="/" className="btn-glow" style={{
-        position: 'fixed', top: 20, left: 24,
-        display: 'inline-flex', alignItems: 'center', gap: 8,
-        color: '#f0eeff', textDecoration: 'none',
-        background: 'rgba(108,99,255,0.1)',
-        border: '1px solid rgba(108,99,255,0.2)',
-        padding: '8px 16px', borderRadius: '20px',
-        fontSize: 13, transition: 'all 150ms ease',
-        zIndex: 10
-      }}>
-        ← Back to home
-      </Link>
-      <div className="fixed inset-0 grid-bg opacity-50 pointer-events-none" />
+    <div className="landing-premium" style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+      <RoutingCanvas />
       
-      <div className="w-full max-w-md relative z-10 animate-fade-up">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-10">
-          <div style={{ 
-            width: 40, height: 40, 
-            background: 'var(--accent)', 
-            borderRadius: 10, 
-            display: 'flex', alignItems: 'center', justifyContent: 'center' 
-          }}>
-            <IconQrcode size={22} color="white" />
+      <div style={{ position: 'absolute', top: '2rem', left: '2rem', zIndex: 20 }}>
+        <Link href="/" className="premium-btn premium-btn-ghost" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem' }}>
+          <IconArrowLeft size={16} />
+          Back to home
+        </Link>
+      </div>
+      
+      <div className="premium-container" style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '440px', padding: '0 1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+          <div className="premium-logo-icon" style={{ margin: '0 auto 1.5rem auto', width: '48px', height: '48px' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/></svg>
           </div>
-          <span className="font-geist text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Project QR
-          </span>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '0.75rem', color: '#fff' }}>
+            Create Your Archive
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem', lineHeight: 1.5 }}>
+            Start managing industrial assets digitally.
+          </p>
         </div>
 
-        <div className="card" style={{ padding: '40px' }}>
-          <h1 className="font-geist text-2xl font-bold mb-2">Create your account</h1>
-          <p className="mb-8" style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', fontFamily: 'Inter, sans-serif' }}>
-            Start managing industrial assets digitally
-          </p>
-
-          {/* Error */}
+        <div style={{ 
+          background: 'rgba(255, 255, 255, 0.02)', 
+          border: '1px solid rgba(255, 255, 255, 0.05)', 
+          borderRadius: '24px', 
+          padding: '2.5rem',
+          backdropFilter: 'blur(20px)'
+        }}>
           {error && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '12px 16px',
               background: 'rgba(255, 90, 90, 0.08)',
               border: '1px solid rgba(255, 90, 90, 0.2)',
-              borderRadius: 8, marginBottom: 20,
+              borderRadius: '12px', marginBottom: '1.5rem',
             }}>
               <IconAlertCircle size={16} color="var(--danger)" />
-              <span style={{ fontSize: '0.875rem', color: 'var(--danger)', fontFamily: 'Inter, sans-serif' }}>{error}</span>
+              <span style={{ fontSize: '0.875rem', color: 'var(--danger)' }}>{error}</span>
             </div>
           )}
 
-          {/* Google */}
           <button
             onClick={handleGoogle}
             disabled={googleLoading}
-            className="btn btn-primary btn-glow w-full justify-center"
-            style={{ width: '100%', justifyContent: 'center' }}
+            className="premium-btn premium-btn-primary"
+            style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', padding: '1rem' }}
           >
-            <IconBrandGoogle size={18} />
+            <IconBrandGoogle size={20} />
             {googleLoading ? 'Connecting...' : 'Continue with Google'}
           </button>
 
-          <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.875rem', color: 'var(--text-secondary)', fontFamily: 'Inter, sans-serif' }}>
-            Already have an account?{' '}
-            <Link href="/login" style={{ color: 'var(--accent-light)', textDecoration: 'none' }}>
-              Sign in
-            </Link>
+          <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem' }}>
+              Already have an account?{' '}
+              <Link href="/login" style={{ color: '#fff', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '2px', transition: 'border-color 0.2s' }} onMouseOver={e => e.currentTarget.style.borderBottomColor = '#fff'} onMouseOut={e => e.currentTarget.style.borderBottomColor = 'rgba(255,255,255,0.3)'}>
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+          <p className="mono" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', letterSpacing: '0.05em' }}>
+            AES-256 ENCRYPTED · SOC 2 TYPE II
           </p>
         </div>
-        
-        <p style={{ 
-          textAlign: 'center', 
-          marginTop: 24, 
-          fontSize: '0.8125rem',
-          color: 'var(--text-muted)',
-          fontFamily: 'JetBrains Mono, monospace'
-        }}>
-          AES-256 Encrypted · SOC 2 Type II
-        </p>
       </div>
     </div>
   )
