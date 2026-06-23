@@ -17,12 +17,12 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Project QR — Industrial Asset Management",
-  description: "Replace paper-based inspection reports with QR-linked digital reports. Secure, instant, and always accessible.",
-  keywords: "industrial asset management, QR codes, inspection reports, factory management, digital reports",
+  title: "Retriqo — Records. Retrieved.",
+  description: "Secure, time-locked documentation routed directly to the factory floor. Scan once. Retrieve forever.",
+  keywords: "industrial asset management, QR routing, secure archives, Retriqo",
   openGraph: {
-    title: "Project QR — Industrial Asset Management",
-    description: "Replace paper-based inspection reports with QR-linked digital reports.",
+    title: "Retriqo — Records. Retrieved.",
+    description: "Secure, time-locked documentation routed directly to the factory floor.",
     type: "website",
   },
 };

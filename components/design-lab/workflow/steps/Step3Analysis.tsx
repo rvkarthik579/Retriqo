@@ -187,7 +187,7 @@ function AnalysisCard({ file, index }: { file: UploadedFile; index: number }) {
           >
             <div className="mt-4 rounded-lg bg-white/60 p-4">
               <p className="mb-3 font-sans text-xs font-semibold text-[#D97706]/80">
-                Project QR builds file trees from ZIP archives. Convert this {file.type.toUpperCase()} to proceed:
+                Retriqo builds file trees from ZIP archives. Convert this {file.type.toUpperCase()} to proceed:
               </p>
               <div className="flex items-center gap-2 font-mono text-[10px] font-bold text-[#D97706]">
                 <span className="rounded bg-[#F59E0B]/10 px-2 py-1">{file.type.toUpperCase()}</span>

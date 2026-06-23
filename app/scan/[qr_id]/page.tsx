@@ -319,7 +319,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
               width: 6, height: 6, borderRadius: '50%',
               background: '#3dffa0', boxShadow: '0 0 6px #3dffa0'
             }} />
-            Project QR
+            Retriqo
           </div>
         </div>
 

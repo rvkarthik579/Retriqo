@@ -52,18 +52,7 @@ export default function Sidebar({ user, deviceCount = 0 }: SidebarProps) {
       {/* Logo */}
       <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border)' }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <div style={{
-            width: 32, height: 32,
-            background: 'var(--accent)',
-            borderRadius: 8,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0
-          }}>
-            <IconQrcode size={18} color="white" />
-          </div>
-          <span className="font-geist font-bold" style={{ color: 'var(--text-primary)', fontSize: '1rem' }}>
-            Project QR
-          </span>
+          <img src="/logo-dark.svg" alt="Retriqo" style={{ height: '24px' }} />
         </Link>
       </div>
 

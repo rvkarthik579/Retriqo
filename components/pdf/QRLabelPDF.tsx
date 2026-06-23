@@ -99,7 +99,7 @@ export function QRLabelPDF({ labels, layout }: QRLabelPDFProps) {
   const pages = chunkLabels(labels, layout)
 
   return (
-    <Document title="QR label sheet" author="Project QR">
+    <Document title="QR label sheet" author="Retriqo">
       {pages.map((pageLabels, pageIndex) => (
         <Page key={pageIndex} size="A4" style={styles.page}>
           <View style={[styles.sheet, { gap }]}>

@@ -35,11 +35,8 @@ export default function LandingPage() {
       <RoutingCanvas />
 
       <nav className={`premium-nav ${scrolled ? 'scrolled' : ''}`}>
-        <div className="premium-logo">
-          <div className="premium-logo-icon">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/></svg>
-          </div>
-          Project QR
+        <div className="premium-logo" style={{ display: 'flex', alignItems: 'center' }}>
+          <img src="/logo-dark.svg" alt="Retriqo" style={{ height: '28px' }} />
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <Link href="/login" className="premium-btn premium-btn-ghost">Sign In</Link>
@@ -51,10 +48,10 @@ export default function LandingPage() {
         
         {/* HERO SECTION */}
         <section className="premium-hero">
-          <h1>The Industrial Archive.</h1>
-          <p>
-            Secure, time-locked documentation routed directly to the factory floor. 
-            Scan once. Archive forever.
+          <h1>Records. Retrieved.</h1>
+          <p className="hero-subtitle reveal-up delay-1">
+            Secure, time-locked documentation routed directly to the factory floor.<br/>
+            Scan once. Retrieve forever.
           </p>
 
           {/* VISUAL SCHEMATIC */}
@@ -203,7 +200,7 @@ export default function LandingPage() {
           gap: '1rem'
         }}>
           <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>
-            © 2026 Project QR
+            © 2026 Retriqo
           </div>
           <div style={{ display: 'flex', gap: '1.5rem' }}>
             <Link href="/privacy" style={{ color: 'var(--text-faint)', fontSize: '0.85rem', textDecoration: 'none' }}>Privacy</Link>

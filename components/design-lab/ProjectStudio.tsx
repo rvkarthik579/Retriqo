@@ -105,7 +105,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
               scans: scans,
               lastScan: lastScan,
               scanTrend: [0, 0, 0, 0, 0, 0, 0], // Not implemented historically
-              recentActivity: scans > 0 ? [`Last scanned: ${lastScan}`] : ["Uploaded to Project QR"],
+              recentActivity: scans > 0 ? [`Last scanned: ${lastScan}`] : ["Uploaded to Retriqo"],
               qrUniqueId: qr?.qr_unique_id,
               filePath: f.file_path,
             });

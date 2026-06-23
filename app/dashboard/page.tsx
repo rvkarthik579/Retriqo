@@ -157,7 +157,7 @@ function DashboardContent() {
 
       <header className="relative z-10 mx-auto flex w-full max-w-4xl flex-col items-center justify-center pb-24 pt-16 text-center">
         <h1 className="mb-6 font-[family-name:var(--font-instrument)] text-8xl text-[#1A1A1A] tracking-tight md:text-9xl">
-          Project QR
+          Retriqo
         </h1>
         
         <div className="max-w-2xl mx-auto flex flex-col items-center">

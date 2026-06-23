@@ -44,9 +44,7 @@ export default function RegisterPage() {
       
       <div className="premium-container" style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '440px', padding: '0 1rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <div className="premium-logo-icon" style={{ margin: '0 auto 1.5rem auto', width: '48px', height: '48px' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="2"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/></svg>
-          </div>
+          <img src="/logo-dark.svg" alt="Retriqo" style={{ height: '40px', margin: '0 auto 1.5rem auto', display: 'block' }} />
           <h1 style={{ fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '0.75rem', color: '#fff' }}>
             Create Your Archive
           </h1>
