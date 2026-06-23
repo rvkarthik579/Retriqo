@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import './production-landing.css'
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
@@ -24,493 +26,338 @@ export default function LandingPage() {
       { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
     )
 
-    const elements = document.querySelectorAll(
-      '.reveal, .reveal-left, .reveal-scale'
-    )
+    const elements = document.querySelectorAll('.reveal-up')
     elements.forEach((el) => observer.observe(el))
-
     return () => observer.disconnect()
   }, [])
 
+  // Canvas Logic
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+      init();
+    };
+    window.addEventListener('resize', resize);
+
+    // Canvas Engine (Archive Routing Network)
+    const nodes: any[] = [];
+    const signals: any[] = [];
+    const cols = 14;
+    const rows = 10;
+    
+    class Node {
+      x: number; y: number; c: number; r: number;
+      constructor(c: number, r: number) {
+        this.c = c; this.r = r;
+        this.x = 0; this.y = 0;
+      }
+      update() {
+        const cellW = width / (cols - 1);
+        const cellH = height / (rows - 1);
+        this.x = this.c * cellW;
+        this.y = this.r * cellH;
+      }
+    }
+
+    class Signal {
+      currentNode!: any; targetNode!: any; progress!: number; speed!: number; active!: boolean;
+      constructor() { this.reset(); }
+      reset() {
+        const rC = Math.floor(Math.random() * (cols-1));
+        const rR = Math.floor(Math.random() * (rows-1));
+        this.currentNode = nodes[rR * cols + rC];
+        const goRight = Math.random() > 0.5;
+        if(goRight && rC < cols-2) this.targetNode = nodes[rR * cols + (rC + 1)];
+        else if(!goRight && rR < rows-2) this.targetNode = nodes[(rR + 1) * cols + rC];
+        else this.targetNode = this.currentNode;
+        
+        this.progress = 0;
+        this.speed = 0.008 + Math.random() * 0.008; 
+        this.active = true;
+      }
+      update() {
+        if(!this.active || !this.targetNode || !this.currentNode) return;
+        this.progress += this.speed;
+        if(this.progress >= 1) {
+          if (Math.random() > 0.8) {
+             this.active = false;
+             setTimeout(() => this.reset(), 1000 + Math.random()*2000);
+          } else {
+             this.currentNode = this.targetNode;
+             this.progress = 0;
+             const neighbors = [];
+             if(this.currentNode.c < cols-1) neighbors.push(nodes[this.currentNode.r * cols + (this.currentNode.c+1)]);
+             if(this.currentNode.r < rows-1) neighbors.push(nodes[(this.currentNode.r+1) * cols + this.currentNode.c]);
+             if(neighbors.length > 0) this.targetNode = neighbors[Math.floor(Math.random() * neighbors.length)];
+             else { this.active = false; setTimeout(() => this.reset(), 500); }
+          }
+        }
+      }
+      draw(ctx: CanvasRenderingContext2D) {
+        if(!this.active || !this.targetNode || !this.currentNode) return;
+        const x = this.currentNode.x + (this.targetNode.x - this.currentNode.x) * this.progress;
+        const y = this.currentNode.y + (this.targetNode.y - this.currentNode.y) * this.progress;
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(this.currentNode.x, this.currentNode.y);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+    }
+
+    function init() {
+      nodes.length = 0; signals.length = 0;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          nodes.push(new Node(c, r));
+        }
+      }
+      for(let i=0; i<15; i++) signals.push(new Signal());
+    }
+
+    let animationFrameId: number;
+    function draw() {
+      if (!ctx) return;
+      ctx.clearRect(0, 0, width, height);
+      nodes.forEach(node => node.update());
+      signals.forEach(sig => sig.update());
+
+      // Draw subtle grid
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const index = r * cols + c;
+          const node = nodes[index];
+          if (c < cols - 1) { ctx.moveTo(node.x, node.y); ctx.lineTo(nodes[index + 1].x, nodes[index + 1].y); }
+          if (r < rows - 1) { ctx.moveTo(node.x, node.y); ctx.lineTo(nodes[index + cols].x, nodes[index + cols].y); }
+        }
+      }
+      ctx.stroke();
+
+      // Draw anchors
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      nodes.forEach(node => {
+        ctx.fillRect(node.x - 1.5, node.y - 1.5, 3, 3);
+      });
+
+      signals.forEach(sig => sig.draw(ctx));
+      animationFrameId = requestAnimationFrame(draw);
+    }
+    
+    init();
+    draw();
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      cancelAnimationFrame(animationFrameId);
+    }
+  }, []);
+
   return (
-    <div style={{
-      background: '#07080f',
-      minHeight: '100vh',
-      color: '#f0eeff',
-      fontFamily: 'Inter, sans-serif',
-      overflowX: 'hidden'
-    }}>
+    <div className="landing-premium">
+      <canvas id="routing-canvas" ref={canvasRef}></canvas>
 
-      {/* NAVBAR */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
-        padding: '0 48px', height: 60,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: scrolled ? 'rgba(7,8,15,0.9)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(20px)' : 'none',
-        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.07)' : 'none',
-        transition: 'all 300ms ease'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, background: '#6c63ff',
-            borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="white">
-              <rect x="1" y="1" width="6" height="6"/>
-              <rect x="9" y="1" width="6" height="6"/>
-              <rect x="1" y="9" width="6" height="6"/>
-              <rect x="11" y="11" width="4" height="4"/>
-              <rect x="9" y="9" width="2" height="2"/>
-            </svg>
+      <nav className={`premium-nav ${scrolled ? 'scrolled' : ''}`}>
+        <div className="premium-logo">
+          <div className="premium-logo-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth="3"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/></svg>
           </div>
-          <span style={{
-            fontFamily: 'Geist, sans-serif',
-            fontWeight: 700, fontSize: 17
-          }}>Project QR</span>
+          Project QR
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-          <a href="#how-it-works" onClick={(e) => {
-            e.preventDefault()
-            document.getElementById('how-it-works')?.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'start'
-            })
-          }} style={{ color: '#9896b8', textDecoration: 'none', fontSize: 14, transition: 'color 150ms' }}
-            onMouseEnter={e => (e.target as HTMLElement).style.color = '#f0eeff'}
-            onMouseLeave={e => (e.target as HTMLElement).style.color = '#9896b8'}>
-            How it works
-          </a>
-          <a href="#features" style={{ color: '#9896b8', textDecoration: 'none', fontSize: 14, transition: 'color 150ms' }}
-            onMouseEnter={e => (e.target as HTMLElement).style.color = '#f0eeff'}
-            onMouseLeave={e => (e.target as HTMLElement).style.color = '#9896b8'}>
-            Features
-          </a>
-          <Link href="/login" className="btn-glow" style={{ 
-            color: '#f0eeff', textDecoration: 'none', fontSize: 14,
-            background: 'rgba(108,99,255,0.1)',
-            border: '1px solid rgba(108,99,255,0.2)',
-            padding: '8px 18px', borderRadius: 6,
-            transition: 'all 150ms ease'
-          }}>
-            Sign In
-          </Link>
-          <Link href="/register" className="btn-glow" style={{
-            background: '#6c63ff', color: 'white',
-            padding: '8px 18px', borderRadius: 6,
-            fontSize: 14, fontWeight: 500, textDecoration: 'none',
-            transition: 'background 150ms ease'
-          }}>
-            Get Started
-          </Link>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <Link href="/login" className="premium-btn premium-btn-ghost">Sign In</Link>
+          <Link href="/register" className="premium-btn premium-btn-primary">Get Started</Link>
         </div>
       </nav>
 
-      {/* HERO */}
-      <section style={{
-        minHeight: '100vh',
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        textAlign: 'center',
-        padding: '120px 40px 80px',
-        position: 'relative',
-        backgroundImage: 'radial-gradient(ellipse 70% 50% at 50% 0%, rgba(108,99,255,0.15) 0%, transparent 70%)'
-      }}>
-        {/* Grid background */}
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          backgroundImage: 'linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-          maskImage: 'radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent)',
-          animation: 'gridFade 2s ease forwards'
-        }} />
-
-        {/* Badge */}
-        <div className="hero-badge-anim" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(108,99,255,0.08)',
-          border: '1px solid rgba(108,99,255,0.2)',
-          borderRadius: 20, padding: '6px 16px', marginBottom: 32,
-          position: 'relative'
-        }}>
-          <div style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: '#a89cff', boxShadow: '0 0 6px #a89cff'
-          }} />
-          <span style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 11, color: '#a89cff',
-            letterSpacing: '0.1em', textTransform: 'uppercase'
-          }}>
-            Industrial Asset Management
-          </span>
-        </div>
-
-        {/* Headline */}
-        <h1 className="hero-title-anim" style={{
-          fontFamily: 'Geist, sans-serif',
-          fontSize: 'clamp(48px, 8vw, 96px)',
-          fontWeight: 800,
-          lineHeight: 1.0,
-          letterSpacing: '-0.03em',
-          marginBottom: 24,
-          position: 'relative'
-        }}>
-          Industrial reports.<br/>
-          <span style={{
-            background: 'linear-gradient(135deg, #a89cff, #6c63ff, #a89cff)',
-            backgroundSize: '200% 200%',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-            animation: 'gradientShift 4s ease infinite'
-          }}>
-            Zero paper.
-          </span><br/>
-          <span style={{ color: '#f0c060' }}>Instant access.</span>
-        </h1>
-
-        {/* Subheading */}
-        <p className="hero-sub-anim" style={{
-          fontSize: 18, color: '#9896b8',
-          maxWidth: 520, lineHeight: 1.7,
-          marginBottom: 16, fontWeight: 300,
-          position: 'relative'
-        }}>
-          Replace paper inspection reports with QR-linked digital records.
-          Stick a code on any machine — anyone can scan it to access
-          the exact report, forever.
-        </p>
-
-        {/* Social proof */}
-        <p className="hero-sub-anim" style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, color: '#5e5c80',
-          letterSpacing: '0.1em', marginBottom: 48,
-          textTransform: 'uppercase', position: 'relative',
-          animationDelay: '0.4s'
-        }}>
-          Used in 12+ industrial facilities · Zero breaches
-        </p>
-
-        {/* CTAs */}
-        <div className="hero-cta-anim" style={{
-          display: 'flex', gap: 14, alignItems: 'center',
-          justifyContent: 'center', flexWrap: 'wrap',
-          marginBottom: 80, position: 'relative'
-        }}>
-          <Link href="/register" className="btn-glow" style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: '#6c63ff', color: 'white',
-            padding: '15px 32px', borderRadius: 6,
-            fontSize: 15, fontWeight: 500, textDecoration: 'none',
-            boxShadow: '0 0 32px rgba(108,99,255,0.35)',
-            transition: 'all 150ms ease'
-          }}>
-            Get Started Free →
-          </Link>
-          <a href="#how-it-works" onClick={(e) => {
-            e.preventDefault()
-            document.getElementById('how-it-works')?.scrollIntoView({ 
-              behavior: 'smooth',
-              block: 'start'
-            })
-          }} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: 'transparent', color: '#9896b8',
-            border: '1px solid rgba(255,255,255,0.12)',
-            padding: '14px 28px', borderRadius: 6,
-            fontSize: 15, textDecoration: 'none',
-            transition: 'all 150ms ease'
-          }}>
-            See how it works ↓
-          </a>
-        </div>
-
-        {/* Stats */}
-        <div className="hero-stats-anim" style={{
-          display: 'flex', gap: 0, alignItems: 'center',
-          justifyContent: 'center', position: 'relative'
-        }}>
-          {[
-            { num: '∞', label: 'QR Generated' },
-            { num: '100%', label: 'Encrypted' },
-            { num: '<200ms', label: 'Decode time' },
-            { num: '0', label: 'Breaches' }
-          ].map((stat, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
-              {i > 0 && <div style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.07)', margin: '0 40px' }} />}
-              <div style={{ textAlign: 'center' }}>
-                <div style={{
-                  fontFamily: 'Geist, sans-serif',
-                  fontSize: 28, fontWeight: 700
-                }}>{stat.num}</div>
-                <div style={{
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 10, color: '#5e5c80',
-                  letterSpacing: '0.1em', textTransform: 'uppercase',
-                  marginTop: 4
-                }}>{stat.label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* TRUST BAR */}
-      <div style={{
-        borderTop: '1px solid rgba(255,255,255,0.07)',
-        borderBottom: '1px solid rgba(255,255,255,0.07)',
-        padding: '18px 40px',
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'center', gap: 48, flexWrap: 'wrap',
-        background: '#0d0f1a'
-      }}>
-        {['AES-256 Encrypted', 'SOC 2 Type II', 'Auto-invalidation', 'PIN Protection', 'ISO 27001'].map((item, i) => (
-          <div key={item} className={`reveal delay-${i+1}`} style={{
-            display: 'flex', alignItems: 'center', gap: 8,
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 11, color: '#5e5c80',
-            letterSpacing: '0.06em'
-          }}>
-            <span style={{ color: '#3dffa0', fontSize: 10 }}>✓</span>
-            {item}
-          </div>
-        ))}
-      </div>
-
-      {/* HOW IT WORKS */}
-      <section id="how-it-works" style={{ padding: '120px 40px', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ marginBottom: 64 }}>
-          <div className="reveal" style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 11, color: '#a89cff',
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            marginBottom: 16
-          }}>{'// How it works'}</div>
-          <h2 className="reveal delay-1" style={{
-            fontFamily: 'Geist, sans-serif',
-            fontSize: 'clamp(32px, 4vw, 48px)',
-            fontWeight: 700, letterSpacing: '-0.02em',
-            lineHeight: 1.1, marginBottom: 16
-          }}>
-            Four steps.<br/>Zero compromise.
-          </h2>
-          <p className="reveal delay-2" style={{ color: '#9896b8', fontSize: 16, maxWidth: 480, lineHeight: 1.7, fontWeight: 300 }}>
-            From first inspection to field distribution in under 60 seconds.
+      <div className="premium-container">
+        
+        {/* HERO SECTION */}
+        <section className="premium-hero">
+          <h1>The Industrial Archive.</h1>
+          <p>
+            Secure, time-locked documentation routed directly to the factory floor. 
+            Scan once. Archive forever.
           </p>
-        </div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 12, overflow: 'hidden'
-        }}>
-          {[
-            { num: '01', title: 'Create Project', desc: 'Name the machine, set location and type. Takes 30 seconds.' },
-            { num: '02', title: 'Upload Report', desc: 'Upload any file — ZIP, PDF, DOCX. We expand ZIP folders automatically.' },
-            { num: '03', title: 'Generate QR', desc: 'Set expiry, add PIN protection, generate a signed QR code instantly.' },
-            { num: '04', title: 'Stick on Machine', desc: 'Print and stick the QR on the machine. Anyone scans to access the report.' }
-          ].map((step, i) => (
-            <div key={i} className={`reveal-scale delay-${i+1} card-hover`} style={{
-              background: '#0d0f1a', padding: '40px 32px',
-              borderRight: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none',
-              transition: 'background 200ms ease'
-            }}
-              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#12152b'}
-              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#0d0f1a'}
-            >
-              <div style={{
-                fontFamily: 'Geist, sans-serif',
-                fontSize: 64, fontWeight: 800,
-                color: 'rgba(255,255,255,0.04)',
-                lineHeight: 1, marginBottom: 20
-              }}>{step.num}</div>
-              <div style={{
-                fontFamily: 'Geist, sans-serif',
-                fontSize: 16, fontWeight: 600, marginBottom: 12
-              }}>{step.title}</div>
-              <div style={{ fontSize: 13, color: '#9896b8', lineHeight: 1.7 }}>{step.desc}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FEATURES */}
-      <section id="features" style={{
-        padding: '0 40px 120px',
-        maxWidth: 1200, margin: '0 auto'
-      }}>
-        <div style={{ marginBottom: 64 }}>
-          <div className="reveal" style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 11, color: '#a89cff',
-            letterSpacing: '0.12em', textTransform: 'uppercase',
-            marginBottom: 16
-          }}>{'// Core capabilities'}</div>
-          <h2 className="reveal delay-1" style={{
-            fontFamily: 'Geist, sans-serif',
-            fontSize: 'clamp(32px, 4vw, 48px)',
-            fontWeight: 700, letterSpacing: '-0.02em',
-            lineHeight: 1.1
-          }}>
-            Built for<br/>field security.
-          </h2>
-        </div>
-
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: 2,
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 12, overflow: 'hidden'
-        }}>
-          {[
-            { title: 'Time-locked QR Codes', desc: 'Every QR is bound to a cryptographic timestamp. Scanning after expiry returns nothing.' },
-            { title: 'PIN-Gated Access', desc: 'Optional 4-digit PIN layer. Three wrong attempts triggers full asset revocation.' },
-            { title: 'Scan Analytics', desc: 'See exactly who scanned, when, IP address, device type, and location.' },
-            { title: 'Multi-format Support', desc: 'ZIP, EAR, WAR, RAR, PDF, DOCX — up to 50MB. AES-256 applied to all.' },
-            { title: 'Instant Revocation', desc: 'One click kills a QR globally — mid-scan. Compromised codes gone in seconds.' },
-            { title: 'Offline Support', desc: 'Files cached after first scan. Works deep in factories with zero signal.' }
-          ].map((feature, i) => (
-            <div key={i} className={`reveal-scale delay-${i+1} card-hover`} style={{
-              background: '#0d0f1a', padding: '32px',
-              position: 'relative', transition: 'background 200ms ease',
-              borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.07)' : 'none'
-            }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.background = '#12152b'
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.background = '#0d0f1a'
-              }}
-            >
-              <div style={{
-                width: 40, height: 40,
-                background: 'rgba(108,99,255,0.1)',
-                border: '1px solid rgba(108,99,255,0.2)',
-                borderRadius: 8,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                marginBottom: 20,
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 12, color: '#a89cff'
-              }}>
-                {String(i + 1).padStart(2, '0')}
+          {/* VISUAL SCHEMATIC */}
+          <div className="hero-schematic reveal-up" style={{ marginTop: '2rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <div className="sch-node mono">
+              <div className="sch-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
-              <div style={{
-                fontFamily: 'Geist, sans-serif',
-                fontSize: 15, fontWeight: 600, marginBottom: 10
-              }}>{feature.title}</div>
-              <div style={{ fontSize: 13, color: '#9896b8', lineHeight: 1.7 }}>{feature.desc}</div>
+              Upload Report
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FREE CTA SECTION — NO PRICING */}
-      <section style={{
-        padding: '120px 40px',
-        textAlign: 'center',
-        borderTop: '1px solid rgba(255,255,255,0.07)',
-        background: 'radial-gradient(ellipse 80% 50% at 50% 100%, rgba(108,99,255,0.08) 0%, transparent 70%)'
-      }}>
-        <div className="reveal" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: 'rgba(61,255,160,0.08)',
-          border: '1px solid rgba(61,255,160,0.2)',
-          borderRadius: 20, padding: '6px 16px', marginBottom: 32
-        }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: '#3dffa0', boxShadow: '0 0 8px #3dffa0'
-          }} />
-          <span style={{
-            fontFamily: 'JetBrains Mono, monospace', fontSize: 12,
-            color: '#3dffa0', letterSpacing: '0.08em', textTransform: 'uppercase'
-          }}>
-            100% Free — No credit card required
-          </span>
-        </div>
-
-        <h2 className="reveal delay-1" style={{
-          fontFamily: 'Geist, sans-serif',
-          fontSize: 'clamp(36px, 5vw, 64px)',
-          fontWeight: 700, letterSpacing: '-0.02em',
-          lineHeight: 1.1, marginBottom: 16
-        }}>
-          Start for free.<br/>Forever.
-        </h2>
-
-        <p className="reveal delay-2" style={{
-          color: '#9896b8', fontSize: 17,
-          maxWidth: 480, margin: '0 auto 48px',
-          lineHeight: 1.7, fontWeight: 300
-        }}>
-          No plans. No tiers. No hidden costs. Project QR is completely
-          free while we build alongside our early users.
-        </p>
-
-        <Link href="/register" className="reveal delay-3 btn-glow" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 8,
-          background: '#6c63ff', color: 'white',
-          padding: '16px 40px', borderRadius: 6,
-          fontSize: 15, fontWeight: 500, textDecoration: 'none',
-          marginBottom: 48
-        }}>
-          Get Started Free →
-        </Link>
-
-        <div className="reveal delay-4" style={{
-          display: 'flex', gap: 32, justifyContent: 'center',
-          flexWrap: 'wrap'
-        }}>
-          {['Unlimited projects', 'Unlimited QR codes', 'Full analytics',
-            'PIN protection', 'Offline support'].map(feature => (
-            <div key={feature} style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              fontSize: 13, color: '#9896b8'
-            }}>
-              <span style={{ color: '#3dffa0' }}>✓</span>
-              {feature}
+            <div className="sch-arrow mono">➔</div>
+            <div className="sch-node mono">
+              <div className="sch-icon" style={{ borderColor: 'var(--border-active)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
+              </div>
+              Generate QR
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="sch-arrow mono">➔</div>
+            <div className="sch-node mono">
+              <div className="sch-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+              </div>
+              Attach to Machine
+            </div>
+            <div className="sch-arrow mono">➔</div>
+            <div className="sch-node mono">
+              <div className="sch-icon" style={{ color: 'var(--text-main)' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              </div>
+              Retrieve Later
+            </div>
+          </div>
+        </section>
 
-      {/* FOOTER */}
-      <footer style={{
-        borderTop: '1px solid rgba(255,255,255,0.07)',
-        padding: '32px 48px',
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', flexWrap: 'wrap', gap: 16
-      }}>
-        <div style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, color: '#5e5c80'
-        }}>
-          © 2026 Project QR — Industrial Asset Distribution
-        </div>
-        <div style={{ display: 'flex', gap: 24 }}>
-          {['Privacy', 'Terms', 'Security', 'Docs'].map(link => (
-            <a key={link} href="#" style={{
-              fontSize: 12, color: '#5e5c80',
-              textDecoration: 'none', transition: 'color 150ms'
-            }}
-              onMouseEnter={e => (e.target as HTMLElement).style.color = '#9896b8'}
-              onMouseLeave={e => (e.target as HTMLElement).style.color = '#5e5c80'}
-            >{link}</a>
-          ))}
-        </div>
-        <div style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 11, color: '#5e5c80'
-        }}>
-          AES-256 Encrypted · SOC 2 Compliant
-        </div>
-      </footer>
+        {/* WHY IT MATTERS (Core Values) */}
+        <section className="premium-section">
+          <div className="section-header reveal-up">
+            <div className="section-tag mono">{'// Capabilities'}</div>
+            <h2 className="section-title">Built for field security.</h2>
+          </div>
+          
+          <div className="value-grid">
+            <div className="value-card reveal-up" style={{ transitionDelay: '0.1s' }}>
+              <div className="value-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              </div>
+              <h3>Time-locked Execution</h3>
+              <p>Every QR is bound to a cryptographic timestamp. Scanning after the designated expiry returns a dead end. Zero data persistence.</p>
+            </div>
+            
+            <div className="value-card reveal-up" style={{ transitionDelay: '0.2s' }}>
+              <div className="value-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              </div>
+              <h3>PIN-Gated Access</h3>
+              <p>Apply an optional 4-digit PIN layer to critical documents. Three incorrect attempts immediately invalidates the routing link globally.</p>
+            </div>
+            
+            <div className="value-card reveal-up" style={{ transitionDelay: '0.3s' }}>
+              <div className="value-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+              </div>
+              <h3>Scan Analytics</h3>
+              <p>Monitor exact routing paths. See exactly who scanned, when the file was accessed, device type, and geographical location.</p>
+            </div>
+          </div>
+        </section>
 
+        {/* HOW IT WORKS (Workflow Timeline) */}
+        <section className="premium-section">
+          <div className="section-header reveal-up">
+            <div className="section-tag mono">{'// Workflow'}</div>
+            <h2 className="section-title">Deployment Process.</h2>
+          </div>
+
+          <div className="workflow-list">
+            {[
+              { title: 'Create Project', desc: 'Initialize the machine profile, set location parameters and equipment type. Deploys in 30 seconds.' },
+              { title: 'Upload Report', desc: 'Ingest any format — ZIP, PDF, DOCX. The system securely expands ZIP archives automatically.' },
+              { title: 'Generate QR', desc: 'Configure expiry rules, attach PIN protection, and generate a cryptographically signed QR anchor.' },
+              { title: 'Deploy on Machine', desc: 'Print and attach the QR anchor to the physical asset. Authorized personnel scan for instant retrieval.' }
+            ].map((step, i) => (
+              <div key={i} className="workflow-item reveal-up" style={{ transitionDelay: `${i * 0.1}s` }}>
+                <div className="wf-number mono">0{i+1}</div>
+                <div className="wf-content">
+                  <h3>{step.title}</h3>
+                  <p>{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* WHY IS IT SECURE (Terminal Readout) */}
+        <section className="premium-section">
+          <div className="section-header reveal-up">
+            <div className="section-tag mono">{'// Architecture'}</div>
+            <h2 className="section-title">Security Architecture.</h2>
+          </div>
+
+          <div className="security-terminal reveal-up">
+            <div className="term-line">
+              <div className="term-key">ENCRYPTION_STANDARD</div>
+              <div className="term-val">AES-256-GCM / 4096-bit RSA</div>
+            </div>
+            <div className="term-line">
+              <div className="term-key">DATA_AT_REST</div>
+              <div className="term-val">Encrypted S3 Object Storage (SOC 2 Type II)</div>
+            </div>
+            <div className="term-line">
+              <div className="term-key">REVOCATION_LATENCY</div>
+              <div className="term-val">&lt; 50ms globally distributed propagation</div>
+            </div>
+            <div className="term-line">
+              <div className="term-key">FILE_LIMITS</div>
+              <div className="term-val">50MB per node. Formats: .pdf, .docx, .zip, .rar</div>
+            </div>
+            <div className="term-line">
+              <div className="term-key">OFFLINE_CACHE</div>
+              <div className="term-val">True. Encrypted IndexedDB blob after initial handshake</div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA SECTION */}
+        <section className="premium-section" style={{ textAlign: 'center', paddingBottom: '160px' }}>
+          <div className="reveal-up">
+            <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>Replace paper with permanence.</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }}>
+              Create an account to begin attaching reports to physical assets.
+            </p>
+            <Link href="/register" className="premium-btn premium-btn-primary" style={{ padding: '1rem 2rem', fontSize: '1rem' }}>
+              Create Account
+            </Link>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+        <footer style={{ 
+          padding: '2rem 0', 
+          borderTop: '1px solid var(--border-subtle)',
+          display: 'flex', 
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          <div className="mono" style={{ fontSize: '0.75rem', color: 'var(--text-faint)' }}>
+            © 2026 Project QR
+          </div>
+          <div style={{ display: 'flex', gap: '1.5rem' }}>
+            <Link href="/privacy" style={{ color: 'var(--text-faint)', fontSize: '0.85rem', textDecoration: 'none' }}>Privacy</Link>
+            <Link href="/terms" style={{ color: 'var(--text-faint)', fontSize: '0.85rem', textDecoration: 'none' }}>Terms</Link>
+            <Link href="/security" style={{ color: 'var(--text-faint)', fontSize: '0.85rem', textDecoration: 'none' }}>Security</Link>
+          </div>
+        </footer>
+
+      </div>
     </div>
   )
 }
