@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { GeistSans } from 'geist/font/sans'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import "./globals.css";
+import "./production-landing.css";
 
 const inter = Inter({
   subsets: ['latin'],

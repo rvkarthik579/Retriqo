@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
-import './production-landing.css'
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
