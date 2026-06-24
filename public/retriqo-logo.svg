@@ -1,7 +1,7 @@
 <svg viewBox="0 0 160 40" fill="none" style="color: #ffffff" xmlns="http://www.w3.org/2000/svg">
     
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@800&amp;display=swap');
     text { font-family: 'Manrope', system-ui, sans-serif; font-weight: 800; }
   </style>
 
