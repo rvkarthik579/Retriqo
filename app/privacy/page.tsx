@@ -1,3 +1,5 @@
+import retriqoLogo from '@/public/retriqo-logo.svg';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export default function PrivacyPage() {
@@ -6,7 +8,7 @@ export default function PrivacyPage() {
       <nav className="premium-nav" style={{ position: 'relative', background: 'transparent' }}>
         <div className="premium-logo">
           <Link href="/" className="premium-logo" style={{ display: 'flex', alignItems: 'center' }}>
-            <img src="/retriqo-logo.svg" alt="Retriqo" style={{ height: '28px' }} />
+            <Image src={retriqoLogo} alt="Retriqo" style={{ height: '28px' , width: 'auto'}} priority unoptimized />
           </Link>
         </div>
       </nav>

@@ -1,4 +1,6 @@
 'use client'
+import retriqoLogo from '@/public/retriqo-logo.svg';
+import Image from 'next/image';
 
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -36,7 +38,7 @@ export default function LandingPage() {
 
       <nav className={`premium-nav ${scrolled ? 'scrolled' : ''}`}>
         <div className="premium-logo" style={{ display: 'flex', alignItems: 'center' }}>
-          <img src="/retriqo-logo.svg" alt="Retriqo" style={{ height: '28px' }} />
+          <Image src={retriqoLogo} alt="Retriqo" style={{ height: '28px' , width: 'auto'}} priority unoptimized />
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <Link href="/login" className="premium-btn premium-btn-ghost">Sign In</Link>

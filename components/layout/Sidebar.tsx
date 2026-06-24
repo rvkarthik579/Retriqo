@@ -1,4 +1,7 @@
 'use client'
+import retriqoLogo from '@/public/retriqo-logo.svg';
+import Image from 'next/image';
+
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
@@ -52,7 +55,7 @@ export default function Sidebar({ user, deviceCount = 0 }: SidebarProps) {
       {/* Logo */}
       <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid var(--border)' }}>
         <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <img src="/retriqo-logo.svg" alt="Retriqo" style={{ height: '24px' }} />
+          <Image src={retriqoLogo} alt="Retriqo" style={{ height: '24px' , width: 'auto'}} priority unoptimized />
         </Link>
       </div>
 

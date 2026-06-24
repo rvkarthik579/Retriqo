@@ -1,4 +1,6 @@
 'use client'
+import retriqoLogo from '@/public/retriqo-logo.svg';
+import Image from 'next/image';
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -44,7 +46,7 @@ export default function LoginPage() {
       
       <div className="premium-container" style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: '440px', padding: '0 1rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-          <img src="/retriqo-logo.svg" alt="Retriqo" style={{ height: '40px', margin: '0 auto 1.5rem auto', display: 'block' }} />
+          <Image src={retriqoLogo} alt="Retriqo" style={{ height: '40px', margin: '0 auto 1.5rem auto', display: 'block' , width: 'auto'}} priority unoptimized />
           <h1 style={{ fontSize: '2.5rem', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '0.75rem', color: '#fff' }}>
             Access Your Archive
           </h1>
