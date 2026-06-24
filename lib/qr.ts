@@ -7,12 +7,12 @@
  * where XXXX is a random 4-character alphanumeric string
  */
 export function generateQRId(): string {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-  let result = 'QR-'
-  for (let i = 0; i < 4; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no ambiguous chars (0,O,1,I)
+  let id = ''
+  for (let i = 0; i < 12; i++) {
+    id += chars[Math.floor(Math.random() * chars.length)]
   }
-  return result
+  return `QR-${id}`
 }
 
 /**

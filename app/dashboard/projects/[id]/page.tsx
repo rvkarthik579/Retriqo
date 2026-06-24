@@ -159,6 +159,34 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
     image.src = source
   }
 
+  
+  async function handleFileAction(filePath: string, action: 'download' | 'copy' | 'open', fileName: string) {
+    const supabase = getSupabaseBrowserClient()
+    const options = action === 'download' ? { download: fileName } : undefined
+    const { data } = await supabase.storage.from('project-qr-files').createSignedUrl(filePath, 300, options)
+    const url = data?.signedUrl
+    
+    if (!url) {
+      alert('Failed to generate secure link.')
+      return
+    }
+    
+    if (action === 'copy') {
+      await navigator.clipboard.writeText(url)
+      setCopiedQR('file-' + filePath)
+      window.setTimeout(() => setCopiedQR(current => current === 'file-' + filePath ? null : current), 1800)
+    } else if (action === 'open') {
+      window.open(url, '_blank')
+    } else if (action === 'download') {
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    }
+  }
+
   if (loading) {
     return (
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -189,7 +217,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       {/* Back */}
-      <Link href="/dashboard" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem', marginBottom: 24 }}>
+      <Link href="/dashboard?view=projects" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', textDecoration: 'none', fontSize: '0.875rem', marginBottom: 24 }}>
         <IconArrowLeft size={16} />
         Dashboard
       </Link>
@@ -435,7 +463,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                                 )}
                               </div>
                               {qr && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', width: '100%' }}>
                                   <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.75rem', color: 'var(--accent-light)' }}>
                                     {qr.qr_unique_id}
                                   </span>
@@ -448,14 +476,19 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
                                   }}>
                                     {qr.is_active ? 'Active' : 'Revoked'}
                                   </span>
+                                  
                                   {qr.is_active && (
-                                    <Link
-                                      href={`/scan/${qr.qr_unique_id}`}
-                                      target="_blank"
-                                      style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '0.7rem', color: 'var(--text-muted)', textDecoration: 'none' }}
-                                    >
-                                      Preview →
-                                    </Link>
+                                    <div style={{ display: 'flex', gap: 12, marginLeft: 'auto' }}>
+                                      <button onClick={() => handleFileAction(file.file_path, 'download', file.file_name)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                                        Download File
+                                      </button>
+                                      <button onClick={() => handleFileAction(file.file_path, 'copy', file.file_name)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                                        {copiedQR === 'file-' + file.file_path ? 'Copied!' : 'Copy Link'}
+                                      </button>
+                                      <button onClick={() => handleFileAction(file.file_path, 'open', file.file_name)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                                        Open In New Tab
+                                      </button>
+                                    </div>
                                   )}
                                 </div>
                               )}

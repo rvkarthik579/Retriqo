@@ -30,11 +30,20 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       setUserName(user.user_metadata?.full_name || 'Authenticated User');
       setUserEmail(user.email || '');
 
-      const { data: files } = await supabase.from('files').select('file_size').eq('user_id', user.id);
-      if (files) {
-        setTotalFiles(files.length);
-        const size = files.reduce((acc, f) => acc + (f.file_size || 0), 0);
-        setUsedCapacity(size);
+      const { data: projectsData } = await supabase.from('projects').select('id, reports(files(file_size))').eq('user_id', user.id);
+      if (projectsData) {
+        let tFiles = 0;
+        let uCap = 0;
+        projectsData.forEach(p => {
+          p.reports?.forEach((r: any) => {
+            r.files?.forEach((f: any) => {
+              tFiles++;
+              uCap += f.file_size || 0;
+            });
+          });
+        });
+        setTotalFiles(tFiles);
+        setUsedCapacity(uCap);
       }
 
       const { count: projCount } = await supabase.from('projects').select('*', { count: 'exact', head: true }).eq('user_id', user.id);
@@ -147,23 +156,31 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
 
                 <div className="space-y-6">
-                  <div className="flex items-end justify-between">
-                    <div className="flex flex-col">
-                      <span className="text-4xl font-[family-name:var(--font-instrument)] text-[#1A1A1A]">{gbUsed} GB</span>
-                      <span className="font-mono text-[10px] tracking-widest text-black/40">USED CAPACITY</span>
+                  {totalFiles === 0 ? (
+                    <div className="flex items-center justify-center p-6 border border-black/5 rounded-lg bg-black/[0.02]">
+                      <span className="font-mono text-[10px] uppercase tracking-widest text-black/40">No files uploaded yet</span>
                     </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-4xl font-[family-name:var(--font-instrument)] text-[#1A1A1A]">{totalFiles}</span>
-                      <span className="font-mono text-[10px] tracking-widest text-black/40">TOTAL FILES</span>
-                    </div>
-                  </div>
-                  <div className="w-full h-2 bg-black/5 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#1A1A1A]" style={{ width: `${percentUsed}%` }} />
-                  </div>
-                  <div className="flex justify-between font-mono text-[10px] text-black/30">
-                    <span>0 GB</span>
-                    <span>10.0 GB Limit</span>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="flex items-end justify-between">
+                        <div className="flex flex-col">
+                          <span className="text-4xl font-[family-name:var(--font-instrument)] text-[#1A1A1A]">{gbUsed} GB</span>
+                          <span className="font-mono text-[10px] tracking-widest text-black/40">USED CAPACITY</span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                          <span className="text-4xl font-[family-name:var(--font-instrument)] text-[#1A1A1A]">{totalFiles}</span>
+                          <span className="font-mono text-[10px] tracking-widest text-black/40">TOTAL FILES</span>
+                        </div>
+                      </div>
+                      <div className="w-full h-2 bg-black/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-[#1A1A1A]" style={{ width: `${percentUsed}%` }} />
+                      </div>
+                      <div className="flex justify-between font-mono text-[10px] text-black/30">
+                        <span>0 GB</span>
+                        <span>10.0 GB Limit</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </section>
 

@@ -14,7 +14,7 @@ interface QRData {
   qr_unique_id: string
   is_active: boolean
   expiry_date: string | null
-  password_hash: string | null
+  password_hash?: string | null
   files: {
     id: string
     file_name: string
@@ -32,7 +32,7 @@ interface QRData {
 export default function ScanPage({ params }: { params: { qr_id: string } }) {
   const qrId = (params as { qr_id: string }).qr_id
   const [qrData, setQrData] = useState<QRData | null>(null)
-  const [status, setStatus] = useState<'loading' | 'valid' | 'expired' | 'revoked' | 'invalid' | 'pin'>('loading')
+  const [status, setStatus] = useState<'loading' | 'valid' | 'expired' | 'revoked' | 'invalid' | 'pin' | 'locked'>('loading')
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState('')
   const [pinAttempts, setPinAttempts] = useState(0)
@@ -46,9 +46,16 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
     try {
       const { data, error } = await supabase
         .from('qr_codes')
-        .select('*, files(*), reports(*)')
+        .select('id, qr_unique_id, is_active, expiry_date, files(*), reports(*)')
         .eq('qr_unique_id', qrId)
         .single()
+        
+      const checkRes = await fetch('/api/qr/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrUniqueId: qrId, checkOnly: true })
+      })
+      const { hasPin, locked } = await checkRes.json()
 
       if (error || !data) {
         setStatus('invalid')
@@ -80,12 +87,17 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
         return
       }
 
-      setQrData(data)
+      setQrData(data as any)
 
-      if (data.password_hash) {
+      if (locked) {
+        setStatus('locked')
+        return
+      }
+
+      if (hasPin) {
         setStatus('pin')
       } else {
-        await loadFileUrl(data.files.file_path)
+        await loadFileUrl((data as any).files.file_path, (data as any).files.file_name)
         setStatus('valid')
       }
 
@@ -95,42 +107,33 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
     }
   }
 
-  async function loadFileUrl(filePath: string) {
-    const { data } = await supabase.storage
+  async function loadFileUrl(filePath: string, fileName?: string) {
+    const { data, error } = await supabase.storage
       .from('project-qr-files')
-      .createSignedUrl(filePath, 3600)
+      .createSignedUrl(filePath, 300, { download: fileName || true }) 
     if (data?.signedUrl) setFileUrl(data.signedUrl)
+    if (error) console.error('Signed URL error:', error)
   }
 
   async function verifyPin() {
     if (pin.length !== 4) return
-    if (pinAttempts >= 3) return
 
     try {
       const response = await fetch('/api/qr/verify-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          pin, 
-          passwordHash: qrData?.password_hash 
-        })
+        body: JSON.stringify({ qrUniqueId: qrId, pin })
       })
-      const { valid } = await response.json()
+      const result = await response.json()
 
-      if (valid) {
-        await loadFileUrl(qrData!.files.file_path)
+      if (result.valid) {
+        await loadFileUrl(qrData!.files.file_path, qrData!.files.file_name)
         setStatus('valid')
       } else {
-        setPinAttempts(a => a + 1)
-        setPinError(pinAttempts >= 2 ? 'Too many attempts. Access locked.' : 'Wrong PIN. Try again.')
+        setPinError(result.error || 'Wrong PIN. Try again.')
         setPin('')
-        if (pinAttempts >= 2) {
-          await supabase.from('scan_logs').insert({
-            qr_id: qrData!.id,
-            scanned_at: new Date().toISOString(),
-            was_blocked: true,
-            block_reason: 'too_many_pin_attempts'
-          })
+        if (result.locked) {
+          setStatus('locked')
         }
       }
     } catch {
@@ -217,6 +220,26 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
     </div>
   )
 
+    // STATUS: LOCKED
+  if (status === 'locked') return (
+    <div style={{
+      minHeight: '100vh', background: '#07080f',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 24, fontFamily: 'Inter, sans-serif'
+    }}>
+      <div style={{ textAlign: 'center', maxWidth: 320 }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⏱️</div>
+        <h1 style={{
+          fontFamily: 'Geist, sans-serif',
+          fontSize: 22, fontWeight: 700, color: '#ff5a5a', marginBottom: 8
+        }}>Access Locked</h1>
+        <p style={{ color: '#9896b8', fontSize: 14 }}>
+          Too many failed attempts. Please try again later.
+        </p>
+      </div>
+    </div>
+  )
+
   // STATUS: PIN
   if (status === 'pin') return (
     <div style={{
@@ -254,15 +277,15 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
                 const joined = newPin.join('').slice(0, 4)
                 setPin(joined)
                 if (val && i < 3) {
-                  const next = document.getElementById(`pin-${i+1}`)
+                  const next = document.getElementById(`pin-\${i+1}`)
                   next?.focus()
                 }
               }}
-              id={`pin-${i}`}
+              id={`pin-\${i}`}
               style={{
                 width: 56, height: 64,
                 background: '#0d0f1a',
-                border: `1px solid ${pinError ? 'rgba(255,90,90,0.4)' : 'rgba(255,255,255,0.12)'}`,
+                border: `1px solid \${pinError ? 'rgba(255,90,90,0.4)' : 'rgba(255,255,255,0.12)'}`,
                 borderRadius: 10,
                 color: '#f0eeff', fontSize: 24,
                 fontFamily: 'JetBrains Mono, monospace',
@@ -278,7 +301,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
         )}
         <button
           onClick={verifyPin}
-          disabled={pin.length !== 4 || pinAttempts >= 3}
+          disabled={pin.length !== 4}
           style={{
             width: '100%', padding: '14px',
             background: pin.length === 4 ? '#6c63ff' : '#1a1a2e',
@@ -340,7 +363,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
             color: qrData?.reports?.status === 'pass' ? '#3dffa0'
               : qrData?.reports?.status === 'fail' ? '#ff5a5a'
               : '#f0c060',
-            border: `1px solid ${
+            border: `1px solid \${
               qrData?.reports?.status === 'pass' ? 'rgba(61,255,160,0.2)'
               : qrData?.reports?.status === 'fail' ? 'rgba(255,90,90,0.2)'
               : 'rgba(240,192,96,0.2)'
@@ -376,7 +399,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
             fontSize: 11, color: '#5e5c80'
           }}>
             {qrData?.files?.file_size 
-              ? `${(qrData.files.file_size / 1024 / 1024).toFixed(1)} MB`
+              ? `\${(qrData.files.file_size / 1024 / 1024).toFixed(1)} MB`
               : ''
             }
           </p>

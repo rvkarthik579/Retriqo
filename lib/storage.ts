@@ -32,25 +32,25 @@ export async function uploadFile(
     return { path: '', url: '', error: error.message }
   }
 
-  const { data: urlData } = supabase.storage
+  const { data: urlData } = await supabase.storage
     .from('project-qr-files')
-    .getPublicUrl(data.path)
+    .createSignedUrl(data.path, 300)
 
   return {
     path: data.path,
-    url: urlData.publicUrl,
+    url: urlData?.signedUrl || '',
   }
 }
 
 /**
  * Gets the public URL for a stored file
  */
-export function getFileUrl(path: string): string {
+export async function getFileUrl(path: string): Promise<string> {
   const supabase = getSupabaseBrowserClient()
-  const { data } = supabase.storage
+  const { data } = await supabase.storage
     .from('project-qr-files')
-    .getPublicUrl(path)
-  return data.publicUrl
+    .createSignedUrl(path, 300)
+  return data?.signedUrl || ''
 }
 
 /**

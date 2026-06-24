@@ -169,16 +169,45 @@ export default function UploadPage({ params }: { params: { id: string } }) {
     setSelectedFiles(new Map())
   }
 
+  
+  async function validateFileType(file: File): Promise<boolean> {
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('extension', ext)
+
+    try {
+      const response = await fetch('/api/validate-file', {
+        method: 'POST',
+        body: formData
+      })
+      const result = await response.json()
+      return result.valid
+    } catch {
+      return true // fail open on validation errors, don't block legitimate uploads
+    }
+  }
+
   async function processFiles(files: File[]) {
     setProcessingFiles(true)
     setExtractionError('')
     
     try {
-      const validFiles = files.filter(f => {
+      const validSizeAndType = files.filter(f => {
         const name = f.name.toLowerCase()
         return ACCEPTED_TYPES.some(ext => name.endsWith(ext)) && 
                f.size <= MAX_FILE_SIZE
       })
+
+      const validFiles: File[] = []
+      for (const f of validSizeAndType) {
+        const isValid = await validateFileType(f)
+        if (!isValid) {
+          setExtractionError(prev => (prev ? prev + '\n' : '') + `"${f.name}" failed security validation. File content does not match extension.`)
+          continue
+        }
+        validFiles.push(f)
+      }
 
       if (validFiles.length === 0) return
       setUploadedFiles(prev => [...prev, ...validFiles])
@@ -191,11 +220,26 @@ export default function UploadPage({ params }: { params: { id: string } }) {
         if (name.endsWith('.zip')) {
           try {
             const zip = await JSZip.loadAsync(file)
+            
+            const entriesList = Object.keys(zip.files).filter(p => !zip.files[p].dir && !p.startsWith('__MACOSX'))
+            if (entriesList.length > 1000) {
+              throw new Error(`Archive contains too many files (${entriesList.length}). Maximum allowed is 1000.`)
+            }
+            let totalUncompressedSize = 0
+            for (const p of entriesList) {
+              const entry = zip.files[p]
+              const uncompressedSize = (entry as any)._data?.uncompressedSize || 0
+              totalUncompressedSize += uncompressedSize
+              if (totalUncompressedSize > 500 * 1024 * 1024) {
+                throw new Error(`Archive expands to over 500MB when extracted. This exceeds the safe limit.`)
+              }
+            }
+
             const rootNodes: TreeNode[] = []
             const folderMap = new Map<string, TreeNode>()
             
             // Extract all files into Blobs immediately to attach as File objects
-            const entries = Object.values(zip.files).filter(entry => !entry.dir)
+            const entries = entriesList.map(p => zip.files[p])
             
             if (entries.length > 0) {
               const extractionPromises = entries.map(async (entry) => {
@@ -249,6 +293,9 @@ export default function UploadPage({ params }: { params: { id: string } }) {
             }
           } catch (err) {
             console.error('ZIP extraction error:', err)
+            setExtractionError(
+              err instanceof Error ? err.message : 'Could not safely process this archive.'
+            )
             allNodes.push({ name: file.name, path: file.name, type: 'file', file })
           }
         } else if (

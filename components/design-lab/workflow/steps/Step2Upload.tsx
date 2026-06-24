@@ -32,7 +32,20 @@ export default function Step2Upload() {
       if (name.endsWith('.zip')) {
         try {
           const zip = await JSZip.loadAsync(file);
-          const entries = Object.values(zip.files).filter(entry => !entry.dir);
+          const entriesList = Object.keys(zip.files).filter(p => !zip.files[p].dir && !p.startsWith('__MACOSX'));
+          if (entriesList.length > 1000) {
+            throw new Error(`Archive contains too many files (${entriesList.length}). Maximum allowed is 1000.`);
+          }
+          let totalUncompressedSize = 0;
+          for (const p of entriesList) {
+            const entry = zip.files[p];
+            const uncompressedSize = (entry as any)._data?.uncompressedSize || 0;
+            totalUncompressedSize += uncompressedSize;
+            if (totalUncompressedSize > 500 * 1024 * 1024) {
+              throw new Error(`Archive expands to over 500MB when extracted. This exceeds the safe limit.`);
+            }
+          }
+          const entries = entriesList.map(p => zip.files[p]);
           const extractionPromises = entries.map(async (entry) => {
             const blob = await entry.async('blob');
             const extractedName = entry.name.split('/').pop() || 'file';

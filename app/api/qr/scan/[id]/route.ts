@@ -114,15 +114,15 @@ export async function POST(
     const user = Array.isArray(project?.users) ? project.users[0] as UserRow : project?.users as UserRow
 
     // Get file URL
-    const { data: urlData } = supabase.storage
+    const { data: urlData } = await supabase.storage
       .from('project-qr-files')
-      .getPublicUrl(file?.file_path ?? '')
+      .createSignedUrl(file?.file_path ?? '', 300)
 
     return NextResponse.json({
       status: 'valid',
       data: {
         fileName: file?.file_name,
-        fileUrl: urlData.publicUrl,
+        fileUrl: urlData?.signedUrl,
         fileSize: file?.file_size,
         status: (report?.status as string) || 'pass',
         machineName: project?.machine_name || 'Unknown Machine',
