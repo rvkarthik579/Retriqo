@@ -432,7 +432,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
                         <span>Expires: {file.expiryDate}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 opacity-0 transition-all duration-300 group-hover:opacity-100">
+                    <div className="flex items-center gap-4 opacity-100 transition-all duration-300">
                       <button onClick={(e) => handleFileAction(e, file.filePath || '', 'download', file.name)} className="text-xs font-medium text-black/50 hover:text-black">
                         Download File
                       </button>
