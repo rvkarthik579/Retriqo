@@ -15,6 +15,7 @@ import type { DesignLabFile } from "@/components/design-lab/types";
 import { QRCodeSVG } from "qrcode.react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useState } from "react";
+import { Link2, ExternalLink } from "lucide-react";
 
 interface FileDetailPanelProps {
   file: DesignLabFile;
@@ -25,6 +26,7 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
   const { triggerRipple } = useCanvasEffect();
   const maxTrend = Math.max(...file.scanTrend, 1);
   const [isDownloadingFile, setIsDownloadingFile] = useState(false);
+  const [copiedQR, setCopiedQR] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -74,25 +76,34 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
     image.src = source;
   };
 
-  const downloadFile = async () => {
+  const handleFileAction = async (action: 'download' | 'copy' | 'open') => {
     if (!file.filePath) return;
     setIsDownloadingFile(true);
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data, error } = await supabase.storage.from('project_files').download(file.filePath);
-      if (error) throw error;
+      const { data, error } = await supabase.storage
+        .from('project-qr-files')
+        .createSignedUrl(file.filePath, 300, action === 'download' ? { download: file.name } : undefined);
       
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      if (error || !data) throw error;
+      
+      if (action === 'open') {
+        window.open(data.signedUrl, '_blank');
+      } else if (action === 'copy') {
+        await navigator.clipboard.writeText(data.signedUrl);
+        setCopiedQR(file.filePath);
+        setTimeout(() => setCopiedQR(null), 2000);
+      } else if (action === 'download') {
+        const a = document.createElement('a');
+        a.href = data.signedUrl;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
     } catch (err) {
-      console.error("Failed to download file", err);
-      alert("Failed to download file");
+      console.error("Failed to perform action", err);
+      alert("Failed to perform action on file");
     } finally {
       setIsDownloadingFile(false);
     }
@@ -152,7 +163,7 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
               className="mb-8 flex w-fit items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-widest text-black/60 transition-colors hover:bg-black/5 hover:text-black"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back
+              Back to Project
             </button>
 
             <motion.h2
@@ -187,13 +198,33 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
 
             <div className="mt-auto flex flex-col gap-3 pt-8">
               <button 
-                onClick={downloadFile}
+                onClick={() => handleFileAction('download')}
                 disabled={isDownloadingFile || !file.filePath}
                 className="flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] py-3.5 text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
               >
                 {isDownloadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
                   {isDownloadingFile ? "Downloading..." : "Download File"}
+                </span>
+              </button>
+              <button 
+                onClick={() => handleFileAction('copy')}
+                disabled={isDownloadingFile || !file.filePath}
+                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50"
+              >
+                <Link2 className="h-4 w-4 text-black/50" />
+                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
+                  {copiedQR === file.filePath ? "Copied!" : "Copy Link"}
+                </span>
+              </button>
+              <button 
+                onClick={() => handleFileAction('open')}
+                disabled={isDownloadingFile || !file.filePath}
+                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50"
+              >
+                <ExternalLink className="h-4 w-4 text-black/50" />
+                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
+                  Open In New Tab
                 </span>
               </button>
               <button

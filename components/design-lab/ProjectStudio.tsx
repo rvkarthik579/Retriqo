@@ -432,19 +432,8 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
                         <span>Expires: {file.expiryDate}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 opacity-100 transition-all duration-300">
-                      <button onClick={(e) => handleFileAction(e, file.filePath || '', 'download', file.name)} className="text-xs font-medium text-black/50 hover:text-black">
-                        Download File
-                      </button>
-                      <button onClick={(e) => handleFileAction(e, file.filePath || '', 'copy', file.name)} className="text-xs font-medium text-black/50 hover:text-black">
-                        {copiedQR === 'file-' + file.filePath ? 'Copied!' : 'Copy Link'}
-                      </button>
-                      <button onClick={(e) => handleFileAction(e, file.filePath || '', 'open', file.name)} className="text-xs font-medium text-black/50 hover:text-black">
-                        Open In New Tab
-                      </button>
-                      <div className="ml-2 rounded-full bg-black/5 p-2 transition-colors hover:bg-black/10">
-                        <ArrowRight className="h-4 w-4 text-black/60" />
-                      </div>
+                    <div className="ml-2 rounded-full bg-black/5 p-2 transition-colors group-hover:bg-black/10">
+                      <ArrowRight className="h-4 w-4 text-black/60" />
                     </div>
                   </motion.div>
                 </motion.div>
