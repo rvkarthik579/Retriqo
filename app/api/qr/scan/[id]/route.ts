@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { createSupabaseAdminClient } from '@/lib/supabase-server'
 import bcrypt from 'bcryptjs'
 import { headers } from 'next/headers'
 
 const MAX_ATTEMPTS = 3
-const failedAttempts = new Map<string, { count: number; lockedUntil?: Date }>()
+const LOCKOUT_MINUTES = 15
 
 export async function POST(
   request: NextRequest,
@@ -23,7 +23,8 @@ export async function POST(
   } catch {}
 
   try {
-    const supabase = await createSupabaseServerClient()
+    // Use admin client to bypass RLS — this route serves unauthenticated public users
+    const supabase = createSupabaseAdminClient()
 
     // Fetch QR code record
     const { data: qr, error: qrError } = await supabase
@@ -31,6 +32,7 @@ export async function POST(
       .select(`
         id, qr_unique_id, password_hash, expiry_date, next_inspection_date,
         show_company, show_uploader_name, show_next_inspection, is_active,
+        failed_pin_attempts, locked_until,
         files(id, file_name, file_path, file_size, file_type,
           reports(id, status, remarks, created_at, project_id,
             projects(machine_name, user_id,
@@ -59,15 +61,19 @@ export async function POST(
       return NextResponse.json({ status: 'expired', expiryDate: qr.expiry_date })
     }
 
-    // Check PIN lockout
-    const attemptKey = `${qr.id}:${ip}`
-    const attempts = failedAttempts.get(attemptKey)
-    if (attempts?.lockedUntil && attempts.lockedUntil > new Date()) {
+    // Check database-backed PIN lockout
+    if (qr.locked_until && new Date(qr.locked_until) > new Date()) {
+      const secondsRemaining = Math.ceil((new Date(qr.locked_until).getTime() - Date.now()) / 1000)
       await logScan(supabase, qr.id, ip, deviceType, true, 'LOCKED')
-      return NextResponse.json({ 
-        status: 'locked',
-        secondsRemaining: Math.ceil((attempts.lockedUntil.getTime() - Date.now()) / 1000)
-      })
+      return NextResponse.json({ status: 'locked', secondsRemaining })
+    }
+
+    // Clear expired lockout
+    if (qr.locked_until && new Date(qr.locked_until) <= new Date()) {
+      await supabase
+        .from('qr_codes')
+        .update({ failed_pin_attempts: 0, locked_until: null })
+        .eq('id', qr.id)
     }
 
     // Check PIN if required
@@ -78,26 +84,34 @@ export async function POST(
 
       const pinValid = await bcrypt.compare(pin, qr.password_hash)
       if (!pinValid) {
-        const current = failedAttempts.get(attemptKey) || { count: 0 }
-        const newCount = current.count + 1
-        
+        const newCount = (qr.failed_pin_attempts || 0) + 1
+
         if (newCount >= MAX_ATTEMPTS) {
-          const lockUntil = new Date(Date.now() + 5 * 60 * 1000) // 5 min lock
-          failedAttempts.set(attemptKey, { count: newCount, lockedUntil: lockUntil })
+          const lockUntil = new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000).toISOString()
+          await supabase
+            .from('qr_codes')
+            .update({ failed_pin_attempts: newCount, locked_until: lockUntil })
+            .eq('id', qr.id)
           await logScan(supabase, qr.id, ip, deviceType, true, 'WRONG_PIN_LOCKED')
           return NextResponse.json({ status: 'locked', locked: true })
         }
-        
-        failedAttempts.set(attemptKey, { count: newCount })
+
+        await supabase
+          .from('qr_codes')
+          .update({ failed_pin_attempts: newCount })
+          .eq('id', qr.id)
         await logScan(supabase, qr.id, ip, deviceType, true, 'WRONG_PIN')
-        return NextResponse.json({ 
+        return NextResponse.json({
           status: 'wrong_pin',
           attemptsLeft: MAX_ATTEMPTS - newCount
         })
       }
 
       // Clear failed attempts on success
-      failedAttempts.delete(attemptKey)
+      await supabase
+        .from('qr_codes')
+        .update({ failed_pin_attempts: 0, locked_until: null })
+        .eq('id', qr.id)
     }
 
     // Success — extract data
@@ -113,7 +127,7 @@ export async function POST(
     const project = Array.isArray(report?.projects) ? report.projects[0] as ProjectRow : report?.projects as ProjectRow
     const user = Array.isArray(project?.users) ? project.users[0] as UserRow : project?.users as UserRow
 
-    // Get file URL
+    // Get file URL via signed URL
     const { data: urlData } = await supabase.storage
       .from('project-qr-files')
       .createSignedUrl(file?.file_path ?? '', 300)
@@ -142,8 +156,9 @@ export async function POST(
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function logScan(
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  supabase: any,
   qrId: string | null,
   ip: string,
   deviceType: string,

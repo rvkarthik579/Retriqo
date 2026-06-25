@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createSupabaseAdminClient } from '@/lib/supabase-server'
 import bcrypt from 'bcryptjs'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export async function POST(request: NextRequest) {
   const { qrUniqueId, pin, checkOnly } = await request.json()
@@ -13,6 +8,9 @@ export async function POST(request: NextRequest) {
   if (!qrUniqueId) {
     return NextResponse.json({ valid: false, error: 'Missing data' }, { status: 400 })
   }
+
+  // Use admin client to bypass RLS — this route serves unauthenticated public users
+  const supabase = createSupabaseAdminClient()
 
   const { data: qr, error } = await supabase
     .from('qr_codes')

@@ -3,14 +3,18 @@
  */
 
 /**
- * Generates a QR unique ID in format QR-XXXX
- * where XXXX is a random 4-character alphanumeric string
+ * Generates a cryptographically secure QR unique ID in format QR-XXXXXXXXXXXX
+ * where XXXXXXXXXXXX is a random 12-character alphanumeric string.
+ * Uses crypto.getRandomValues() (Web Crypto API) for security.
+ * Works in both browser and server environments.
  */
 export function generateQRId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no ambiguous chars (0,O,1,I)
+  const bytes = new Uint8Array(12)
+  crypto.getRandomValues(bytes)
   let id = ''
   for (let i = 0; i < 12; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)]
+    id += chars[bytes[i] % chars.length]
   }
   return `QR-${id}`
 }
