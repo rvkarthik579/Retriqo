@@ -242,7 +242,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
               className="flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-black/5"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Dashboard
+              Back to Projects List
             </button>
 
             <div className="flex gap-3">
