@@ -9,20 +9,23 @@ import {
   QrCode,
   TrendingUp,
   Loader2,
+  Link2,
+  ExternalLink,
+  Eye
 } from "lucide-react";
 import { useCanvasEffect } from "@/components/design-lab/CanvasEffectContext";
 import type { DesignLabFile } from "@/components/design-lab/types";
 import { QRCodeSVG } from "qrcode.react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { useState } from "react";
-import { Link2, ExternalLink } from "lucide-react";
 
 interface FileDetailPanelProps {
   file: DesignLabFile;
   onClose: () => void;
+  onDelete?: () => void; // Added callback to refresh parent
 }
 
-export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps) {
+export default function FileDetailPanel({ file, onClose, onDelete }: FileDetailPanelProps) {
   const { triggerRipple } = useCanvasEffect();
   const maxTrend = Math.max(...file.scanTrend, 1);
   const [isDownloadingFile, setIsDownloadingFile] = useState(false);
@@ -35,12 +38,17 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
     try {
       const supabase = getSupabaseBrowserClient();
       if (file.filePath) {
-        await supabase.storage.from('project_files').remove([file.filePath]);
+        await supabase.storage.from('project-qr-files').remove([file.filePath]);
       }
       const { error } = await supabase.from('files').delete().eq('id', file.id);
       if (error) throw error;
+      
       onClose();
-      window.location.reload();
+      if (onDelete) {
+        onDelete();
+      } else {
+        window.location.reload();
+      }
     } catch (err) {
       console.error('Failed to delete', err);
       alert('Failed to delete file');
@@ -76,7 +84,7 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
     image.src = source;
   };
 
-  const handleFileAction = async (action: 'download' | 'copy' | 'open') => {
+  const handleFileAction = async (action: 'download' | 'copy' | 'open' | 'preview') => {
     if (!file.filePath) return;
     setIsDownloadingFile(true);
     try {
@@ -87,8 +95,14 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
       
       if (error || !data) throw error;
       
-      if (action === 'open') {
-        window.open(data.signedUrl, '_blank');
+      if (action === 'open' || action === 'preview') {
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        if (ext === 'docx' || ext === 'doc') {
+          const encodedUrl = encodeURIComponent(data.signedUrl);
+          window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodedUrl}`, '_blank');
+        } else {
+          window.open(data.signedUrl, '_blank');
+        }
       } else if (action === 'copy') {
         await navigator.clipboard.writeText(data.signedUrl);
         setCopiedQR(file.filePath);
@@ -118,25 +132,36 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
         onClick={onClose}
         className="fixed inset-0 z-40 bg-[#F9F9F8]/85 backdrop-blur-md"
       />
-      <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-[5vh]">
+      <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-0 lg:p-[5vh]">
         <motion.div
           layoutId={`file-card-${file.id}`}
-          className="pointer-events-auto flex h-[90vh] w-[90vw] max-w-[1400px] overflow-hidden rounded-2xl bg-[#FCFCFA] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.2),0_0_0_1px_rgba(0,0,0,0.05)]"
+          className="pointer-events-auto flex h-full w-full lg:h-[90vh] lg:w-[90vw] max-w-[1400px] flex-col lg:flex-row overflow-y-auto lg:overflow-hidden bg-[#FCFCFA] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.2)] lg:rounded-2xl"
           transition={{ type: "spring", stiffness: 350, damping: 35 }}
           style={{
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E\")",
           }}
         >
-          {/* Left — QR Code */}
+          {/* Top/Left — QR Code */}
           <motion.div
             layoutId={`file-content-${file.id}`}
-            className="flex w-[28%] shrink-0 flex-col items-center justify-center border-r border-black/5 bg-[#F9F9F8]/80 p-10"
+            className="flex w-full lg:w-[28%] shrink-0 flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-black/5 bg-[#F9F9F8]/80 p-8 lg:p-10"
           >
+            {/* Mobile Back Button - Only visible on small screens */}
+            <div className="w-full flex justify-start mb-6 lg:hidden">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-2 rounded-full bg-white px-5 py-3 shadow-sm font-mono text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A] transition-colors hover:bg-black/5"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+            </div>
+
             <p className="mb-6 font-mono text-[10px] uppercase tracking-widest text-black/40">
               QR Code
             </p>
-            <div className="flex aspect-square w-[240px] h-[240px] items-center justify-center rounded-2xl border border-black/10 bg-white p-6 shadow-lg">
+            <div className="flex aspect-square w-[200px] lg:w-[240px] items-center justify-center rounded-2xl border border-black/10 bg-white p-6 shadow-lg">
               {file.qrUniqueId ? (
                 <QRCodeSVG
                   id={`detail-qr-${file.qrUniqueId}`}
@@ -156,19 +181,20 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
             </p>
           </motion.div>
 
-          {/* Center — File Details */}
-          <div className="flex w-[36%] shrink-0 flex-col border-r border-black/5 p-10">
+          {/* Center — File Details & Actions */}
+          <div className="flex w-full lg:w-[36%] shrink-0 flex-col border-b lg:border-b-0 lg:border-r border-black/5 p-8 lg:p-10">
+            {/* Desktop Back Button */}
             <button
               onClick={onClose}
-              className="mb-8 flex w-fit items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-widest text-black/60 transition-colors hover:bg-black/5 hover:text-black"
+              className="mb-8 hidden lg:flex w-fit items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] uppercase tracking-widest text-black/60 transition-colors hover:bg-black/5 hover:text-black"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Project
+              Back to Project Studio
             </button>
 
             <motion.h2
               layoutId={`file-title-${file.id}`}
-              className="mb-8 font-[family-name:var(--font-instrument)] text-4xl leading-tight text-[#1A1A1A]"
+              className="mb-8 font-[family-name:var(--font-instrument)] text-3xl lg:text-4xl leading-tight text-[#1A1A1A] break-all"
             >
               {file.name}
             </motion.h2>
@@ -196,66 +222,74 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
               ))}
             </div>
 
-            <div className="mt-auto flex flex-col gap-3 pt-8">
+            <div className="mt-8 flex flex-col gap-3">
+              <button 
+                onClick={() => handleFileAction('preview')}
+                disabled={isDownloadingFile || !file.filePath}
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#6c63ff] py-4 lg:py-3.5 text-white shadow-lg shadow-[#6c63ff]/20 transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 min-h-[56px]"
+              >
+                {isDownloadingFile ? <Loader2 className="h-5 w-5 animate-spin" /> : <Eye className="h-5 w-5" />}
+                <span className="font-mono text-[12px] font-bold uppercase tracking-widest">
+                  Preview Report
+                </span>
+              </button>
+              
               <button 
                 onClick={() => handleFileAction('download')}
                 disabled={isDownloadingFile || !file.filePath}
-                className="flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] py-3.5 text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100"
+                className="flex items-center justify-center gap-2 rounded-xl bg-[#1A1A1A] py-4 lg:py-3.5 text-white transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 min-h-[56px]"
               >
-                {isDownloadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
-                  {isDownloadingFile ? "Downloading..." : "Download File"}
+                <Download className="h-5 w-5" />
+                <span className="font-mono text-[12px] font-bold uppercase tracking-widest">
+                  Download File
                 </span>
               </button>
-              <button 
-                onClick={() => handleFileAction('copy')}
-                disabled={isDownloadingFile || !file.filePath}
-                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50"
-              >
-                <Link2 className="h-4 w-4 text-black/50" />
-                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
-                  {copiedQR === file.filePath ? "Copied!" : "Copy Link"}
-                </span>
-              </button>
-              <button 
-                onClick={() => handleFileAction('open')}
-                disabled={isDownloadingFile || !file.filePath}
-                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50"
-              >
-                <ExternalLink className="h-4 w-4 text-black/50" />
-                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
-                  Open In New Tab
-                </span>
-              </button>
-              <button
-                onClick={downloadQR}
-                disabled={!file.qrUniqueId}
-                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50"
-              >
-                <QrCode className="h-4 w-4 text-black/50" />
-                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
-                  Download QR
-                </span>
-              </button>
-              <button
-                onClick={() => triggerRipple("#D4A017")}
-                className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5"
-              >
-                <RotateCw className="h-4 w-4 text-black/50" />
-                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
-                  Regenerate QR
-                </span>
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={isDeleting}
-                className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-3.5 text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
-              >
-                {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                <span className="font-mono text-[11px] font-medium uppercase tracking-widest">
-                  {isDeleting ? "Deleting..." : "Delete"}
-                </span>
-              </button>
+              
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <button 
+                  onClick={() => handleFileAction('copy')}
+                  disabled={isDownloadingFile || !file.filePath}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50 min-h-[56px]"
+                >
+                  <Link2 className="h-4 w-4 text-black/50" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                    {copiedQR === file.filePath ? "Copied!" : "Copy Link"}
+                  </span>
+                </button>
+                <button 
+                  onClick={() => handleFileAction('open')}
+                  disabled={isDownloadingFile || !file.filePath}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50 min-h-[56px]"
+                >
+                  <ExternalLink className="h-4 w-4 text-black/50" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                    New Tab
+                  </span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <button
+                  onClick={downloadQR}
+                  disabled={!file.qrUniqueId}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-black/10 bg-white py-3.5 text-black/80 transition-colors hover:bg-black/5 disabled:opacity-50 min-h-[56px]"
+                >
+                  <QrCode className="h-4 w-4 text-black/50" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                    Save QR
+                  </span>
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-3.5 text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50 min-h-[56px]"
+                >
+                  {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-widest">
+                    Delete
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -264,14 +298,14 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.15, duration: 0.4 }}
-            className="flex flex-1 flex-col p-10"
+            className="flex flex-1 flex-col p-8 lg:p-10 bg-white/40"
           >
             <p className="mb-8 font-mono text-[10px] uppercase tracking-widest text-black/40">
               Analytics
             </p>
 
             <div className="mb-8 grid grid-cols-2 gap-4">
-              <div className="rounded-xl border border-black/5 bg-white p-5">
+              <div className="rounded-xl border border-black/5 bg-white p-5 shadow-sm">
                 <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-black/40">
                   Total Scans
                 </p>
@@ -279,7 +313,7 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
                   {file.scans}
                 </p>
               </div>
-              <div className="rounded-xl border border-black/5 bg-white p-5">
+              <div className="rounded-xl border border-black/5 bg-white p-5 shadow-sm">
                 <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-black/40">
                   Last Scan
                 </p>
@@ -287,7 +321,7 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
               </div>
             </div>
 
-            <div className="mb-8 rounded-xl border border-black/5 bg-white p-5">
+            <div className="mb-8 rounded-xl border border-black/5 bg-white p-5 shadow-sm">
               <div className="mb-4 flex items-center justify-between">
                 <p className="font-mono text-[10px] uppercase tracking-widest text-black/40">
                   Scan Trend
@@ -313,7 +347,7 @@ export default function FileDetailPanel({ file, onClose }: FileDetailPanelProps)
                 {file.recentActivity.map((activity, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 rounded-lg border border-black/5 bg-white/80 px-4 py-3"
+                    className="flex items-center gap-3 rounded-lg border border-black/5 bg-white px-4 py-3 shadow-sm"
                   >
                     <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-green-500/60" />
                     <span className="text-sm text-black/70">{activity}</span>

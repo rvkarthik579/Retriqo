@@ -346,3 +346,33 @@
   opacity: 1;
   transform: translateY(0);
 }
+
+/* Mobile Responsive Additions */
+@media(max-width: 768px) {
+  .premium-nav {
+    padding: 0 4vw;
+  }
+  .premium-nav .premium-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
+  .value-grid {
+    grid-template-columns: 1fr;
+  }
+  .security-terminal {
+    padding: 1.5rem;
+  }
+  .term-line {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .term-key {
+    width: auto;
+  }
+  .workflow-item {
+    gap: 1.5rem;
+  }
+  .section-title {
+    font-size: 2rem;
+  }
+}

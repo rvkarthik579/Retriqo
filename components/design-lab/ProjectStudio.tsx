@@ -16,8 +16,6 @@ interface ProjectStudioProps {
   onClose: () => void;
 }
 
-// Mock files removed
-
 export default function ProjectStudio({ project, onClose }: ProjectStudioProps) {
   const router = useRouter();
   const { triggerRipple } = useCanvasEffect();
@@ -33,96 +31,95 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
   const [isGeneratingPrint, setIsGeneratingPrint] = useState(false);
   const [copiedQR, setCopiedQR] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchFiles() {
-      setIsLoading(true);
-      try {
-        const supabase = getSupabaseBrowserClient();
-        const { data: reports, error } = await supabase
-          .from('reports')
-          .select(`
-            id, status,
-            files(
-              id, file_name, file_type, file_path, file_size, created_at,
-              qr_codes(id, qr_unique_id, expiry_date, is_active)
-            )
-          `)
-          .eq('project_id', project.id);
+  const fetchFiles = async () => {
+    setIsLoading(true);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: reports, error } = await supabase
+        .from('reports')
+        .select(`
+          id, status,
+          files(
+            id, file_name, file_type, file_path, file_size, created_at,
+            qr_codes(id, qr_unique_id, expiry_date, is_active)
+          )
+        `)
+        .eq('project_id', project.id);
 
-        if (error) {
-          console.error("Error fetching files:", error);
-          setProjectFiles([]);
-          return;
-        }
-
-        const qrIds: string[] = [];
-        reports?.forEach(report => {
-          report.files?.forEach((f: any) => {
-            const qr = f.qr_codes?.[0]; // Assume 1 QR per file
-            if (qr?.id) qrIds.push(qr.id);
-          });
-        });
-
-        const scanCounts = new Map<string, number>();
-        const lastScanDates = new Map<string, string>();
-
-        if (qrIds.length > 0) {
-          const { data: logs } = await supabase
-            .from('scan_logs')
-            .select('qr_id, was_blocked, created_at')
-            .in('qr_id', qrIds)
-            .order('created_at', { ascending: false });
-
-          logs?.forEach(log => {
-            if (!log.was_blocked) {
-              scanCounts.set(log.qr_id, (scanCounts.get(log.qr_id) || 0) + 1);
-              if (!lastScanDates.has(log.qr_id)) {
-                lastScanDates.set(log.qr_id, new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }));
-              }
-            }
-          });
-        }
-
-        const mappedFiles: DesignLabFile[] = [];
-        reports?.forEach(report => {
-          report.files?.forEach((f: any) => {
-            const qr = f.qr_codes?.[0]; // Assume 1 QR per file
-            const scans = qr ? (scanCounts.get(qr.id) || 0) : 0;
-            const lastScan = qr ? (lastScanDates.get(qr.id) || "Never") : "Never";
-
-            mappedFiles.push({
-              id: f.id,
-              name: f.file_name,
-              type: f.file_type.includes('pdf') ? 'pdf' : (f.file_type.includes('sheet') ? 'spreadsheet' : 'document'),
-              projectName: project.name,
-              createdDate: new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-              expiryDate: qr?.expiry_date ? new Date(qr.expiry_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : "Never",
-              uploadedBy: "System",
-              status: report.status === 'pass' ? 'Active' : 'Needs Attention',
-              date: "Recently",
-              rotation: 0,
-              yOffset: 0,
-              xOffset: 0,
-              scans: scans,
-              lastScan: lastScan,
-              scanTrend: [0, 0, 0, 0, 0, 0, 0], // Not implemented historically
-              recentActivity: scans > 0 ? [`Last scanned: ${lastScan}`] : ["Uploaded to Retriqo"],
-              qrUniqueId: qr?.qr_unique_id,
-              filePath: f.file_path,
-            });
-          });
-        });
-
-        setProjectFiles(mappedFiles);
-      } catch (err) {
-        console.error("Failed to load project files:", err);
+      if (error) {
+        console.error("Error fetching files:", error);
         setProjectFiles([]);
-      } finally {
-        setIsLoading(false);
+        return;
       }
 
-    }
+      const qrIds: string[] = [];
+      reports?.forEach(report => {
+        report.files?.forEach((f: any) => {
+          const qr = f.qr_codes?.[0]; // Assume 1 QR per file
+          if (qr?.id) qrIds.push(qr.id);
+        });
+      });
 
+      const scanCounts = new Map<string, number>();
+      const lastScanDates = new Map<string, string>();
+
+      if (qrIds.length > 0) {
+        const { data: logs } = await supabase
+          .from('scan_logs')
+          .select('qr_id, was_blocked, created_at')
+          .in('qr_id', qrIds)
+          .order('created_at', { ascending: false });
+
+        logs?.forEach(log => {
+          if (!log.was_blocked) {
+            scanCounts.set(log.qr_id, (scanCounts.get(log.qr_id) || 0) + 1);
+            if (!lastScanDates.has(log.qr_id)) {
+              lastScanDates.set(log.qr_id, new Date(log.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }));
+            }
+          }
+        });
+      }
+
+      const mappedFiles: DesignLabFile[] = [];
+      reports?.forEach(report => {
+        report.files?.forEach((f: any) => {
+          const qr = f.qr_codes?.[0]; // Assume 1 QR per file
+          const scans = qr ? (scanCounts.get(qr.id) || 0) : 0;
+          const lastScan = qr ? (lastScanDates.get(qr.id) || "Never") : "Never";
+
+          mappedFiles.push({
+            id: f.id,
+            name: f.file_name,
+            type: f.file_type.includes('pdf') ? 'pdf' : (f.file_type.includes('sheet') ? 'spreadsheet' : 'document'),
+            projectName: project.name,
+            createdDate: new Date(f.created_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
+            expiryDate: qr?.expiry_date ? new Date(qr.expiry_date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : "Never",
+            uploadedBy: "System",
+            status: report.status === 'pass' ? 'Active' : 'Needs Attention',
+            date: "Recently",
+            rotation: 0,
+            yOffset: 0,
+            xOffset: 0,
+            scans: scans,
+            lastScan: lastScan,
+            scanTrend: [0, 0, 0, 0, 0, 0, 0], // Not implemented historically
+            recentActivity: scans > 0 ? [`Last scanned: ${lastScan}`] : ["Uploaded to Retriqo"],
+            qrUniqueId: qr?.qr_unique_id,
+            filePath: f.file_path,
+          });
+        });
+      });
+
+      setProjectFiles(mappedFiles);
+    } catch (err) {
+      console.error("Failed to load project files:", err);
+      setProjectFiles([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (project.id) {
       fetchFiles();
     }
@@ -230,28 +227,26 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
         className="fixed inset-0 z-40 overflow-y-auto bg-[#F9F9F8]"
         transition={{ type: "spring", stiffness: 350, damping: 35 }}
       >
-        <div className="mx-auto max-w-6xl px-8 py-12">
+        <div className="mx-auto max-w-6xl px-4 lg:px-8 py-6 lg:py-12">
           <motion.div 
-            className="mb-16 flex items-center justify-between rounded-full bg-white/40 px-6 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl border border-white/30"
+            className="mb-8 lg:mb-16 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-3xl lg:rounded-full bg-white/40 px-6 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.08)] backdrop-blur-xl border border-white/30"
           >
             <button
               onClick={() => {
                 triggerRipple("#1A1A1A");
                 onClose();
               }}
-              className="flex items-center gap-2 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-black/5"
+              className="flex w-full sm:w-auto items-center justify-center sm:justify-start gap-2 rounded-full px-4 py-2 font-mono text-[11px] font-medium uppercase tracking-widest transition-colors hover:bg-black/5"
             >
               <ArrowLeft className="h-4 w-4" />
-              Back to Projects List
+              Back
             </button>
 
-            <div className="flex gap-3">
-              {/* Search button temporarily removed for Phase 1 release */}
-
+            <div className="flex flex-wrap items-center justify-center gap-3 w-full sm:w-auto">
               <button
                 onClick={() => handlePrint()}
                 disabled={isGeneratingPrint || isGeneratingPdf}
-                className="flex items-center gap-2 rounded-full border border-black/10 px-5 py-2 transition-colors hover:bg-black/5 disabled:opacity-50"
+                className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-full border border-black/10 px-4 py-2 transition-colors hover:bg-black/5 disabled:opacity-50"
               >
                 {isGeneratingPrint ? (
                   <Loader2 className="h-4 w-4 animate-spin text-black/60" />
@@ -259,15 +254,15 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
                   <Printer className="h-4 w-4 text-black/60" />
                 )}
                 <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-[#1A1A1A]">
-                  Print Labels
+                  Print
                 </span>
               </button>
 
-              <div className="relative">
+              <div className="relative flex-1 sm:flex-none">
                 <button
                   onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
                   disabled={isGeneratingPdf || isGeneratingPrint}
-                  className="flex items-center gap-2 rounded-full border border-black/10 px-5 py-2 transition-colors hover:bg-black/5 disabled:opacity-50"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-black/10 px-4 py-2 transition-colors hover:bg-black/5 disabled:opacity-50"
                 >
                   {isGeneratingPdf ? (
                     <Loader2 className="h-4 w-4 animate-spin text-black/60" />
@@ -287,7 +282,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 8, scale: 0.95 }}
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                      className="absolute right-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-black/5 bg-white p-1 shadow-xl shadow-black/5 z-50"
+                      className="absolute right-0 sm:right-auto sm:left-0 top-full mt-2 w-48 overflow-hidden rounded-xl border border-black/5 bg-white p-1 shadow-xl shadow-black/5 z-50"
                     >
                       <div className="px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-black/30">Layout (Per Page)</div>
                       {[1, 2, 4, 6, 9].map((layoutNum) => (
@@ -312,36 +307,35 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
                   triggerRipple("#2BBBAD");
                   router.push(`/dashboard/projects/${project.id}/upload`);
                 }}
-                className="ml-2 flex items-center gap-2 rounded-full bg-[#111111] px-6 py-2 text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+                className="flex flex-1 sm:flex-none items-center justify-center gap-2 rounded-full bg-[#111111] px-5 py-2 text-white shadow-lg transition-all hover:scale-105 active:scale-95"
               >
                 <Plus className="h-4 w-4" />
                 <span className="font-mono text-[11px] font-bold uppercase tracking-widest">
-                  New File
+                  New
                 </span>
               </button>
             </div>
           </motion.div>
 
-          <motion.div layoutId={`project-content-${project.id}`} className="mb-16">
+          <motion.div layoutId={`project-content-${project.id}`} className="mb-8 lg:mb-16">
             <motion.h1
-              className="mb-6 font-[family-name:var(--font-instrument)] text-6xl text-[#1A1A1A]"
+              className="mb-6 font-[family-name:var(--font-instrument)] text-4xl lg:text-6xl text-[#1A1A1A] break-all"
             >
               {project.name}
             </motion.h1>
-            <div className="flex gap-8 border-b border-black/5 pb-8">
-              <div className="flex flex-col gap-1">
+            <div className="flex flex-wrap gap-6 lg:gap-8 border-b border-black/5 pb-8">
+              <div className="flex flex-col gap-1 min-w-[80px]">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-black/40">
                   Files
                 </span>
                 <span className="text-lg">{project.filesCount}</span>
               </div>
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 min-w-[80px]">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-black/40">
                   QR Codes
                 </span>
                 <span className="text-lg">{project.qrCount}</span>
               </div>
-              {/* Analytics header temporarily removed */}
               <div className="flex flex-col gap-1">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-black/40">
                   Last Activity
@@ -351,10 +345,10 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
             </div>
           </motion.div>
 
-          <div className="mb-8 flex gap-8 border-b border-black/5">
+          <div className="mb-8 flex gap-8 border-b border-black/5 overflow-x-auto">
             <button
               onClick={() => setActiveTab("files")}
-              className={`pb-4 font-mono text-[11px] font-bold uppercase tracking-widest transition-colors ${
+              className={`pb-4 whitespace-nowrap font-mono text-[11px] font-bold uppercase tracking-widest transition-colors ${
                 activeTab === "files"
                   ? "border-b-2 border-black text-black"
                   : "text-black/40 hover:text-black/80"
@@ -362,7 +356,6 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
             >
               Files & QR Codes
             </button>
-            {/* Analytics tab temporarily removed */}
           </div>
 
           {activeTab === "files" && (
@@ -370,7 +363,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
               {isLoading ? (
                 <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-black/20" /></div>
               ) : projectFiles.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-20 px-4 rounded-2xl border border-dashed border-black/10 bg-white/50 text-center">
+                <div className="flex flex-col items-center justify-center py-16 px-4 rounded-2xl border border-dashed border-black/10 bg-white/50 text-center">
                   <div className="rounded-full bg-[#1A1A1A]/5 p-4 mb-4">
                     <FileText className="h-8 w-8 text-[#1A1A1A]/40" />
                   </div>
@@ -408,31 +401,31 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
                     }}
                     className="group relative flex cursor-pointer items-center justify-between rounded-2xl border border-black/5 bg-white p-4 transition-all duration-300 hover:-translate-y-0.5 hover:translate-x-1 hover:bg-black/[0.02] hover:shadow-[0_8px_30px_-10px_rgba(0,0,0,0.08)]"
                   >
-                    <motion.div layoutId={`file-content-${file.id}`} className="flex flex-1 items-center gap-6">
-                    <div className="rounded-lg bg-black/5 p-3">
+                    <motion.div layoutId={`file-content-${file.id}`} className="flex flex-1 flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
+                    <div className="rounded-lg bg-black/5 p-3 self-start sm:self-center">
                       {getIcon(file.type)}
                     </div>
                     <div className="flex flex-1 flex-col justify-center">
                       <motion.h4
                         layoutId={`file-title-${file.id}`}
-                        className="font-medium text-[#1A1A1A]"
+                        className="font-medium text-[#1A1A1A] break-all"
                       >
                         {file.name}
                       </motion.h4>
-                      <div className="mt-1 flex items-center gap-6 text-sm text-black/50">
-                        <span className="flex items-center gap-1.5">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-black/50">
+                        <span className="flex items-center gap-1.5 min-w-[120px]">
                           <span className={`h-2 w-2 rounded-full ${file.status === "Active" ? "bg-green-500" : "bg-amber-500"}`} />
                           {file.status}
                         </span>
-                        <span className="flex items-center gap-1.5">
+                        <span className="flex items-center gap-1.5 min-w-[100px]">
                           <QrCode className="h-3.5 w-3.5" />
                           {file.scans} Scans
                         </span>
-                        <span>Created: {file.createdDate}</span>
-                        <span>Expires: {file.expiryDate}</span>
+                        <span className="min-w-[140px]">Created: {file.createdDate}</span>
+                        <span className="min-w-[140px]">Expires: {file.expiryDate}</span>
                       </div>
                     </div>
-                    <div className="ml-2 rounded-full bg-black/5 p-2 transition-colors group-hover:bg-black/10">
+                    <div className="hidden sm:flex ml-2 rounded-full bg-black/5 p-2 transition-colors group-hover:bg-black/10">
                       <ArrowRight className="h-4 w-4 text-black/60" />
                     </div>
                   </motion.div>
@@ -442,19 +435,20 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
               )}
             </div>
           )}
-
-          {activeTab === "analytics" && (
-            <div className="flex h-64 w-full flex-col items-center justify-center rounded-2xl border border-black/5 bg-white text-black/40">
-              <p className="font-mono text-[11px] uppercase tracking-widest">
-                Analytics are currently unavailable
-              </p>
-            </div>
-          )}
         </div>
       </motion.div>
 
       <AnimatePresence>
-        {selectedFile && <FileDetailPanel file={selectedFile} onClose={() => setSelectedFile(null)} />}
+        {selectedFile && (
+          <FileDetailPanel 
+            file={selectedFile} 
+            onClose={() => setSelectedFile(null)} 
+            onDelete={() => {
+              setSelectedFile(null);
+              fetchFiles();
+            }}
+          />
+        )}
       </AnimatePresence>
     </>
   );

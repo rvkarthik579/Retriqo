@@ -1,143 +1,105 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
-
-// CRITICAL: Use anonymous client — NO auth required for scanning
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 interface QRData {
-  id: string
-  qr_unique_id: string
-  is_active: boolean
-  expiry_date: string | null
-  password_hash?: string | null
-  files: {
-    id: string
-    file_name: string
-    file_path: string
-    file_type: string
-    file_size: number
-  }
-  reports: {
-    status: string
-    remarks: string | null
-    next_inspection_date: string | null
-  }
+  fileName: string
+  fileUrl: string
+  fileSize: number
+  status: string
+  machineName: string
+  reportDate: string
+  expiryDate?: string
+  remarks?: string
+  nextInspectionDate?: string
+  companyName?: string
+  uploaderName?: string
+  requiresPin: boolean
 }
 
 export default function ScanPage({ params }: { params: { qr_id: string } }) {
-  const qrId = (params as { qr_id: string }).qr_id
+  const qrId = params.qr_id
   const [qrData, setQrData] = useState<QRData | null>(null)
   const [status, setStatus] = useState<'loading' | 'valid' | 'expired' | 'revoked' | 'invalid' | 'pin' | 'locked'>('loading')
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState('')
-  const [pinAttempts, setPinAttempts] = useState(0)
-  const [fileUrl, setFileUrl] = useState('')
+  const [attemptsLeft, setAttemptsLeft] = useState<number | null>(null)
+  const [secondsRemaining, setSecondsRemaining] = useState<number | null>(null)
 
   useEffect(() => {
     loadQR()
   }, [qrId])
 
-  async function loadQR() {
+  useEffect(() => {
+    if (status === 'locked' && secondsRemaining && secondsRemaining > 0) {
+      const timer = setInterval(() => {
+        setSecondsRemaining(prev => prev ? prev - 1 : 0)
+      }, 1000)
+      return () => clearInterval(timer)
+    } else if (status === 'locked' && secondsRemaining === 0) {
+      loadQR()
+    }
+  }, [status, secondsRemaining])
+
+  async function loadQR(pinToVerify?: string) {
     try {
-      const { data, error } = await supabase
-        .from('qr_codes')
-        .select('id, qr_unique_id, is_active, expiry_date, files(*), reports(*)')
-        .eq('qr_unique_id', qrId)
-        .single()
-        
-      const checkRes = await fetch('/api/qr/verify-pin', {
+      const body: any = {}
+      if (pinToVerify) body.pin = pinToVerify
+      
+      const res = await fetch(`/api/qr/scan/${qrId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrUniqueId: qrId, checkOnly: true })
+        body: JSON.stringify(body)
       })
-      const { hasPin, locked } = await checkRes.json()
+      
+      const result = await res.json()
 
-      if (error || !data) {
+      if (res.status === 404 || result.status === 'error') {
         setStatus('invalid')
         return
       }
 
-      // Log scan attempt
-      await supabase.from('scan_logs').insert({
-        qr_id: data.id,
-        scanned_at: new Date().toISOString(),
-        device_type: navigator.userAgent,
-        was_blocked: false
-      })
-
-      if (!data.is_active) {
+      if (result.status === 'revoked') {
         setStatus('revoked')
-        return
-      }
-
-      if (data.expiry_date && new Date(data.expiry_date) < new Date()) {
-        // Log blocked scan
-        await supabase.from('scan_logs').insert({
-          qr_id: data.id,
-          scanned_at: new Date().toISOString(),
-          was_blocked: true,
-          block_reason: 'expired'
-        })
+      } else if (result.status === 'expired') {
         setStatus('expired')
-        return
-      }
-
-      setQrData(data as any)
-
-      if (locked) {
+        if (result.expiryDate) {
+          setQrData({ ...result.data, expiryDate: result.expiryDate } as any)
+        }
+      } else if (result.status === 'locked') {
         setStatus('locked')
-        return
-      }
-
-      if (hasPin) {
+        setSecondsRemaining(result.secondsRemaining || 900)
+      } else if (result.status === 'pin_required') {
         setStatus('pin')
-      } else {
-        await loadFileUrl((data as any).files.file_path, (data as any).files.file_name)
+      } else if (result.status === 'wrong_pin') {
+        setStatus('pin')
+        setPinError('Incorrect PIN')
+        setAttemptsLeft(result.attemptsLeft)
+      } else if (result.status === 'valid') {
+        setQrData(result.data)
         setStatus('valid')
+      } else {
+        setStatus('invalid')
       }
-
     } catch (err) {
       console.error('Scan error:', err)
       setStatus('invalid')
     }
   }
 
-  async function loadFileUrl(filePath: string, fileName?: string) {
-    const { data, error } = await supabase.storage
-      .from('project-qr-files')
-      .createSignedUrl(filePath, 300, { download: fileName || true }) 
-    if (data?.signedUrl) setFileUrl(data.signedUrl)
-    if (error) console.error('Signed URL error:', error)
-  }
-
-  async function verifyPin() {
-    if (pin.length !== 4) return
-
-    try {
-      const response = await fetch('/api/qr/verify-pin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrUniqueId: qrId, pin })
-      })
-      const result = await response.json()
-
-      if (result.valid) {
-        await loadFileUrl(qrData!.files.file_path, qrData!.files.file_name)
-        setStatus('valid')
-      } else {
-        setPinError(result.error || 'Wrong PIN. Try again.')
-        setPin('')
-        if (result.locked) {
-          setStatus('locked')
-        }
-      }
-    } catch {
-      setPinError('Verification failed. Try again.')
+  function handlePreview() {
+    if (!qrData?.fileUrl) return
+    const ext = qrData.fileName.split('.').pop()?.toLowerCase()
+    
+    // Preview logic
+    if (ext === 'pdf' || ext === 'txt' || ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'webp' || ext === 'mp4') {
+      window.open(qrData.fileUrl, '_blank')
+    } else if (ext === 'docx' || ext === 'doc') {
+      // Use Google Docs Viewer or Office Viewer for DOCX
+      const encodedUrl = encodeURIComponent(qrData.fileUrl)
+      window.open(`https://view.officeapps.live.com/op/view.aspx?src=${encodedUrl}`, '_blank')
+    } else {
+      alert("Preview unavailable for this file type. Please download the file.")
     }
   }
 
@@ -145,15 +107,17 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
   if (status === 'loading') return (
     <div style={{
       minHeight: '100vh', background: '#07080f',
-      display: 'flex', alignItems: 'center', justifyContent: 'center'
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
     }}>
       <div style={{
-        width: 32, height: 32, borderRadius: '50%',
-        border: '2px solid rgba(108,99,255,0.3)',
+        width: 48, height: 48, borderRadius: '50%',
+        border: '3px solid rgba(108,99,255,0.3)',
         borderTopColor: '#6c63ff',
-        animation: 'spin 600ms linear infinite'
+        animation: 'spin 800ms linear infinite',
+        marginBottom: 24
       }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <p style={{ color: '#9896b8', fontFamily: 'Geist, sans-serif', fontSize: 16 }}>Loading report details...</p>
     </div>
   )
 
@@ -165,14 +129,9 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
       padding: 24, fontFamily: 'Inter, sans-serif'
     }}>
       <div style={{ textAlign: 'center', maxWidth: 320 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-        <h1 style={{
-          fontFamily: 'Geist, sans-serif',
-          fontSize: 22, fontWeight: 700, color: '#f0eeff', marginBottom: 8
-        }}>Invalid QR Code</h1>
-        <p style={{ color: '#9896b8', fontSize: 14 }}>
-          This QR code does not exist or has been removed.
-        </p>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>⚠️</div>
+        <h1 style={{ fontFamily: 'Geist, sans-serif', fontSize: 24, fontWeight: 700, color: '#f0eeff', marginBottom: 8 }}>Invalid QR Code</h1>
+        <p style={{ color: '#9896b8', fontSize: 16, lineHeight: 1.5 }}>This QR code does not exist or has been removed.</p>
       </div>
     </div>
   )
@@ -185,14 +144,9 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
       padding: 24, fontFamily: 'Inter, sans-serif'
     }}>
       <div style={{ textAlign: 'center', maxWidth: 320 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>🚫</div>
-        <h1 style={{
-          fontFamily: 'Geist, sans-serif',
-          fontSize: 22, fontWeight: 700, color: '#ff5a5a', marginBottom: 8
-        }}>Access Revoked</h1>
-        <p style={{ color: '#9896b8', fontSize: 14 }}>
-          This QR code has been revoked by the owner.
-        </p>
+        <div style={{ fontSize: 64, marginBottom: 16 }}>🚫</div>
+        <h1 style={{ fontFamily: 'Geist, sans-serif', fontSize: 24, fontWeight: 700, color: '#ff5a5a', marginBottom: 8 }}>Access Revoked</h1>
+        <p style={{ color: '#9896b8', fontSize: 16, lineHeight: 1.5 }}>This QR code has been revoked by the owner.</p>
       </div>
     </div>
   )
@@ -205,22 +159,20 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
       padding: 24, fontFamily: 'Inter, sans-serif'
     }}>
       <div style={{ textAlign: 'center', maxWidth: 320 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⏰</div>
-        <h1 style={{
-          fontFamily: 'Geist, sans-serif',
-          fontSize: 22, fontWeight: 700, color: '#f0c060', marginBottom: 8
-        }}>QR Code Expired</h1>
-        <p style={{ color: '#9896b8', fontSize: 14 }}>
-          This QR code expired on{' '}
-          {qrData?.expiry_date 
-            ? new Date(qrData.expiry_date).toLocaleDateString() 
-            : 'an unknown date'}.
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f0c060" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginBottom: 16, margin: '0 auto'}}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <h1 style={{ fontFamily: 'Geist, sans-serif', fontSize: 24, fontWeight: 700, color: '#f0c060', marginBottom: 8 }}>QR Code Expired</h1>
+        <p style={{ color: '#9896b8', fontSize: 16, lineHeight: 1.5, marginBottom: 24 }}>
+          This link expired on {qrData?.expiryDate ? new Date(qrData.expiryDate).toLocaleDateString() : 'its set expiry date'}.
         </p>
+        <p style={{ color: '#5e5c80', fontSize: 14 }}>Please contact your administrator to generate a new QR code.</p>
       </div>
     </div>
   )
 
-    // STATUS: LOCKED
+  // STATUS: LOCKED
   if (status === 'locked') return (
     <div style={{
       minHeight: '100vh', background: '#07080f',
@@ -228,14 +180,25 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
       padding: 24, fontFamily: 'Inter, sans-serif'
     }}>
       <div style={{ textAlign: 'center', maxWidth: 320 }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⏱️</div>
-        <h1 style={{
-          fontFamily: 'Geist, sans-serif',
-          fontSize: 22, fontWeight: 700, color: '#ff5a5a', marginBottom: 8
-        }}>Access Locked</h1>
-        <p style={{ color: '#9896b8', fontSize: 14 }}>
-          Too many failed attempts. Please try again later.
+        <div style={{ fontSize: 64, marginBottom: 16 }}>⏱️</div>
+        <h1 style={{ fontFamily: 'Geist, sans-serif', fontSize: 24, fontWeight: 700, color: '#ff5a5a', marginBottom: 8 }}>Access Locked</h1>
+        <p style={{ color: '#9896b8', fontSize: 16, lineHeight: 1.5, marginBottom: 16 }}>
+          Too many failed PIN attempts.
         </p>
+        {secondsRemaining !== null && secondsRemaining > 0 && (
+          <div style={{ 
+            background: 'rgba(255,90,90,0.1)', 
+            padding: '12px 24px', 
+            borderRadius: 12, 
+            display: 'inline-block',
+            color: '#ff5a5a',
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 20,
+            fontWeight: 700
+          }}>
+            {Math.floor(secondsRemaining / 60)}:{(secondsRemaining % 60).toString().padStart(2, '0')}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -247,27 +210,28 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 24, fontFamily: 'Inter, sans-serif'
     }}>
-      <div style={{ textAlign: 'center', maxWidth: 320, width: '100%' }}>
+      <div style={{ textAlign: 'center', maxWidth: 360, width: '100%' }}>
         <div style={{
-          width: 64, height: 64,
+          width: 72, height: 72,
           background: 'rgba(108,99,255,0.1)',
           border: '1px solid rgba(108,99,255,0.2)',
-          borderRadius: 16, margin: '0 auto 24px',
+          borderRadius: 20, margin: '0 auto 24px',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 28
-        }}>🔒</div>
-        <h1 style={{
-          fontFamily: 'Geist, sans-serif',
-          fontSize: 22, fontWeight: 700, color: '#f0eeff', marginBottom: 8
-        }}>PIN Required</h1>
-        <p style={{ color: '#9896b8', fontSize: 14, marginBottom: 32 }}>
-          Enter the 4-digit PIN to access this file.
-        </p>
+        }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#6c63ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h1 style={{ fontFamily: 'Geist, sans-serif', fontSize: 24, fontWeight: 700, color: '#f0eeff', marginBottom: 8 }}>PIN Required</h1>
+        <p style={{ color: '#9896b8', fontSize: 16, marginBottom: 32 }}>Enter the 4-digit PIN to view this report.</p>
+        
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginBottom: 24 }}>
           {[0,1,2,3].map(i => (
             <input
               key={i}
-              type="text"
+              type="tel"
+              inputMode="numeric"
               maxLength={1}
               value={pin[i] || ''}
               onChange={e => {
@@ -277,43 +241,54 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
                 const joined = newPin.join('').slice(0, 4)
                 setPin(joined)
                 if (val && i < 3) {
-                  const next = document.getElementById(`pin-\${i+1}`)
+                  const next = document.getElementById(`pin-${i+1}`)
                   next?.focus()
                 }
               }}
-              id={`pin-\${i}`}
+              onKeyDown={e => {
+                if (e.key === 'Backspace' && !pin[i] && i > 0) {
+                  const prev = document.getElementById(`pin-${i-1}`)
+                  prev?.focus()
+                }
+                if (e.key === 'Enter' && pin.length === 4) {
+                  loadQR(pin)
+                }
+              }}
+              id={`pin-${i}`}
               style={{
-                width: 56, height: 64,
+                width: 64, height: 72,
                 background: '#0d0f1a',
-                border: `1px solid \${pinError ? 'rgba(255,90,90,0.4)' : 'rgba(255,255,255,0.12)'}`,
-                borderRadius: 10,
-                color: '#f0eeff', fontSize: 24,
+                border: `1.5px solid ${pinError ? 'rgba(255,90,90,0.5)' : pin[i] ? '#6c63ff' : 'rgba(255,255,255,0.1)'}`,
+                borderRadius: 12,
+                color: '#f0eeff', fontSize: 28,
                 fontFamily: 'JetBrains Mono, monospace',
-                textAlign: 'center', outline: 'none'
+                textAlign: 'center', outline: 'none',
+                transition: 'border-color 0.2s'
               }}
             />
           ))}
         </div>
         {pinError && (
-          <p style={{ color: '#ff5a5a', fontSize: 13, marginBottom: 16 }}>
-            {pinError}
-          </p>
+          <div style={{ color: '#ff5a5a', fontSize: 14, marginBottom: 16 }}>
+            {pinError} {attemptsLeft !== null && `(${attemptsLeft} attempt${attemptsLeft === 1 ? '' : 's'} left)`}
+          </div>
         )}
         <button
-          onClick={verifyPin}
+          onClick={() => loadQR(pin)}
           disabled={pin.length !== 4}
           style={{
-            width: '100%', padding: '14px',
+            width: '100%', padding: '16px',
             background: pin.length === 4 ? '#6c63ff' : '#1a1a2e',
             color: pin.length === 4 ? 'white' : '#5e5c80',
-            border: 'none', borderRadius: 10,
-            fontSize: 15, fontWeight: 600,
+            border: 'none', borderRadius: 12,
+            fontSize: 16, fontWeight: 600,
             fontFamily: 'Geist, sans-serif',
             cursor: pin.length === 4 ? 'pointer' : 'not-allowed',
-            transition: 'all 150ms ease'
+            transition: 'all 0.2s ease',
+            minHeight: 56 // 44px minimum + padding
           }}
         >
-          Unlock
+          Unlock Report
         </button>
       </div>
     </div>
@@ -324,163 +299,181 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
     <div style={{
       minHeight: '100vh', background: '#07080f',
       display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: 24, fontFamily: 'Inter, sans-serif'
+      alignItems: 'center', padding: '32px 16px', fontFamily: 'Inter, sans-serif'
     }}>
-      <div style={{ width: '100%', maxWidth: 400 }}>
+      <div style={{ width: '100%', maxWidth: 480 }}>
         
-        {/* Header */}
+        {/* Retriqo Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 11, color: '#5e5c80',
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            marginBottom: 8
+            fontSize: 12, color: '#5e5c80',
+            letterSpacing: '0.15em', textTransform: 'uppercase',
+            fontWeight: 600
           }}>
             <div style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: '#3dffa0', boxShadow: '0 0 6px #3dffa0'
+              width: 8, height: 8, borderRadius: '50%',
+              background: '#3dffa0', boxShadow: '0 0 10px rgba(61,255,160,0.5)'
             }} />
             Retriqo
           </div>
         </div>
 
-        {/* Status badge */}
-        <div style={{
-          display: 'flex', justifyContent: 'center', marginBottom: 24
+        {/* Machine Name */}
+        <h1 style={{
+          fontFamily: 'Geist, sans-serif',
+          fontSize: 32, fontWeight: 800, color: '#f0eeff',
+          textAlign: 'center', marginBottom: 16,
+          lineHeight: 1.2
         }}>
+          {qrData?.machineName}
+        </h1>
+
+        {/* Status */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
           <span style={{
             fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 13, fontWeight: 700,
+            fontSize: 14, fontWeight: 700,
             letterSpacing: '0.06em', textTransform: 'uppercase',
-            padding: '8px 20px', borderRadius: 24,
-            background: qrData?.reports?.status === 'pass' 
-              ? 'rgba(61,255,160,0.1)' 
-              : qrData?.reports?.status === 'fail'
-              ? 'rgba(255,90,90,0.1)'
-              : 'rgba(240,192,96,0.1)',
-            color: qrData?.reports?.status === 'pass' ? '#3dffa0'
-              : qrData?.reports?.status === 'fail' ? '#ff5a5a'
-              : '#f0c060',
-            border: `1px solid \${
-              qrData?.reports?.status === 'pass' ? 'rgba(61,255,160,0.2)'
-              : qrData?.reports?.status === 'fail' ? 'rgba(255,90,90,0.2)'
-              : 'rgba(240,192,96,0.2)'
-            }`
+            padding: '10px 24px', borderRadius: 32,
+            background: qrData?.status === 'pass' ? 'rgba(61,255,160,0.1)' 
+                      : qrData?.status === 'fail' ? 'rgba(255,90,90,0.1)'
+                      : 'rgba(240,192,96,0.1)',
+            color: qrData?.status === 'pass' ? '#3dffa0'
+                 : qrData?.status === 'fail' ? '#ff5a5a'
+                 : '#f0c060',
+            border: `1px solid ${
+              qrData?.status === 'pass' ? 'rgba(61,255,160,0.25)'
+              : qrData?.status === 'fail' ? 'rgba(255,90,90,0.25)'
+              : 'rgba(240,192,96,0.25)'
+            }`,
+            display: 'inline-flex', alignItems: 'center', gap: 8
           }}>
-            {qrData?.reports?.status === 'pass' ? '✓ Pass'
-              : qrData?.reports?.status === 'fail' ? '✕ Fail'
-              : '⚠ Needs Attention'}
+            {qrData?.status === 'pass' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              : qrData?.status === 'fail' ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>}
+            {qrData?.status === 'pass' ? 'PASS'
+              : qrData?.status === 'fail' ? 'FAIL'
+              : 'NEEDS ATTENTION'}
           </span>
         </div>
 
-        {/* File card */}
-        <div style={{
-          background: '#0d0f1a',
-          border: '1px solid rgba(255,255,255,0.07)',
-          borderRadius: 16, padding: 24, marginBottom: 16
-        }}>
-          <p style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 10, color: '#5e5c80',
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-            marginBottom: 8
-          }}>File</p>
-          <p style={{
-            fontFamily: 'Geist, sans-serif',
-            fontSize: 18, fontWeight: 700, color: '#f0eeff',
-            marginBottom: 4, wordBreak: 'break-all'
-          }}>
-            {qrData?.files?.file_name}
-          </p>
-          <p style={{
-            fontFamily: 'JetBrains Mono, monospace',
-            fontSize: 11, color: '#5e5c80'
-          }}>
-            {qrData?.files?.file_size 
-              ? `\${(qrData.files.file_size / 1024 / 1024).toFixed(1)} MB`
-              : ''
-            }
-          </p>
+        {/* Data Cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+          
+          <div style={{ display: 'flex', gap: 16 }}>
+            {/* Date */}
+            <div style={{
+              flex: 1, background: '#0d0f1a', border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 16, padding: 20
+            }}>
+              <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#5e5c80', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Inspection Date</p>
+              <p style={{ fontFamily: 'Geist, sans-serif', fontSize: 18, fontWeight: 600, color: '#f0eeff' }}>
+                {qrData?.reportDate ? new Date(qrData.reportDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'}) : '—'}
+              </p>
+            </div>
+
+            {/* Next Inspection */}
+            {qrData?.nextInspectionDate && (
+              <div style={{
+                flex: 1, background: 'rgba(108,99,255,0.05)', border: '1px solid rgba(108,99,255,0.15)',
+                borderRadius: 16, padding: 20
+              }}>
+                <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#8884d8', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Next Inspection</p>
+                <p style={{ fontFamily: 'Geist, sans-serif', fontSize: 18, fontWeight: 600, color: '#a89cff' }}>
+                  {new Date(qrData.nextInspectionDate).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Remarks */}
+          {qrData?.remarks && (
+            <div style={{ background: '#0d0f1a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20 }}>
+              <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#5e5c80', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Remarks</p>
+              <p style={{ fontSize: 15, color: '#9896b8', lineHeight: 1.6 }}>{qrData.remarks}</p>
+            </div>
+          )}
+
+          {/* Company / Uploader */}
+          {(qrData?.companyName || qrData?.uploaderName) && (
+            <div style={{ display: 'flex', gap: 16 }}>
+              {qrData.companyName && (
+                <div style={{ flex: 1, background: '#0d0f1a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20 }}>
+                  <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#5e5c80', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Company</p>
+                  <p style={{ fontSize: 15, color: '#f0eeff', fontWeight: 500 }}>{qrData.companyName}</p>
+                </div>
+              )}
+              {qrData.uploaderName && (
+                <div style={{ flex: 1, background: '#0d0f1a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 16, padding: 20 }}>
+                  <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#5e5c80', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Inspector</p>
+                  <p style={{ fontSize: 15, color: '#f0eeff', fontWeight: 500 }}>{qrData.uploaderName}</p>
+                </div>
+              )}
+            </div>
+          )}
+
         </div>
 
-        {/* Remarks */}
-        {qrData?.reports?.remarks && (
-          <div style={{
-            background: '#0d0f1a',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 12, padding: 16, marginBottom: 16
-          }}>
-            <p style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 10, color: '#5e5c80',
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              marginBottom: 8
-            }}>Remarks</p>
-            <p style={{ fontSize: 14, color: '#9896b8', lineHeight: 1.6 }}>
-              {qrData.reports.remarks}
-            </p>
-          </div>
-        )}
+        {/* File actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 32 }}>
+          {qrData?.fileUrl ? (
+            <>
+              <button
+                onClick={handlePreview}
+                style={{
+                  width: '100%', padding: '18px',
+                  background: '#6c63ff', color: 'white',
+                  border: 'none', borderRadius: 16,
+                  fontSize: 16, fontWeight: 600,
+                  fontFamily: 'Geist, sans-serif', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                  boxShadow: '0 8px 24px rgba(108,99,255,0.25)',
+                  minHeight: 56
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                Preview Report
+              </button>
+              
+              <a
+                href={qrData.fileUrl}
+                download={qrData.fileName}
+                style={{
+                  width: '100%', padding: '18px',
+                  background: 'transparent', color: '#f0eeff',
+                  border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 16,
+                  fontSize: 16, fontWeight: 600,
+                  fontFamily: 'Geist, sans-serif', textDecoration: 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                  minHeight: 56
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download ({qrData.fileSize ? (qrData.fileSize / 1024 / 1024).toFixed(1) + ' MB' : 'File'})
+              </a>
+            </>
+          ) : (
+            <button disabled style={{
+              width: '100%', padding: '18px',
+              background: '#1a1a2e', color: '#5e5c80',
+              border: 'none', borderRadius: 16,
+              fontSize: 16, fontWeight: 600,
+              fontFamily: 'Geist, sans-serif', cursor: 'not-allowed',
+              minHeight: 56
+            }}>
+              Loading file...
+            </button>
+          )}
+        </div>
 
-        {/* Next inspection */}
-        {qrData?.reports?.next_inspection_date && (
-          <div style={{
-            background: 'rgba(108,99,255,0.06)',
-            border: '1px solid rgba(108,99,255,0.15)',
-            borderRadius: 12, padding: 14, marginBottom: 16
-          }}>
-            <p style={{
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 10, color: '#5e5c80',
-              letterSpacing: '0.1em', textTransform: 'uppercase',
-              marginBottom: 4
-            }}>Next Inspection</p>
-            <p style={{ fontSize: 14, color: '#a89cff', fontWeight: 500 }}>
-              {new Date(qrData.reports.next_inspection_date).toLocaleDateString()}
-            </p>
-          </div>
-        )}
-
-        {/* QR ID */}
         <p style={{
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: 10, color: '#5e5c80',
-          textAlign: 'center', marginBottom: 24,
-          letterSpacing: '0.08em'
+          fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#5e5c80',
+          textAlign: 'center', letterSpacing: '0.1em', marginTop: 'auto'
         }}>
-          ID: {qrData?.qr_unique_id}
+          ID: {qrId}
         </p>
-
-        {/* Download button */}
-        {fileUrl ? (
-          <a
-            href={fileUrl}
-            download={qrData?.files?.file_name}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 10, width: '100%', padding: '16px',
-              background: '#6c63ff', color: 'white',
-              borderRadius: 12, fontSize: 16, fontWeight: 600,
-              fontFamily: 'Geist, sans-serif',
-              textDecoration: 'none',
-              boxShadow: '0 0 24px rgba(108,99,255,0.3)'
-            }}
-          >
-            ↓ Download File
-          </a>
-        ) : (
-          <button style={{
-            width: '100%', padding: '16px',
-            background: '#1a1a2e', color: '#5e5c80',
-            border: '1px solid rgba(255,255,255,0.07)',
-            borderRadius: 12, fontSize: 15,
-            fontFamily: 'Geist, sans-serif', cursor: 'not-allowed'
-          }}>
-            Preparing download...
-          </button>
-        )}
 
       </div>
     </div>

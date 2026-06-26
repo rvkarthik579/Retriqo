@@ -185,7 +185,7 @@ export default function SettingsPage() {
                     placeholder="https://... (avatar URL)"
                     value={avatarUrl}
                     onChange={e => setAvatarUrl(e.target.value)}
-                    style={{ width: 280, fontSize: '0.8125rem', padding: '8px 12px' }}
+                    style={{ width: '100%', maxWidth: 280, fontSize: '0.8125rem', padding: '8px 12px' }}
                   />
                 </div>
               </div>

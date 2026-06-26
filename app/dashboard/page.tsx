@@ -173,11 +173,11 @@ function DashboardContent() {
           </p>
         </div>
 
-        <div className="mt-14 mb-14 flex items-center justify-center gap-4 rounded-full border border-black/[0.06] bg-black/[0.02] px-8 py-3.5 text-xs font-mono tracking-[0.15em] uppercase text-black/30 backdrop-blur-sm">
+        <div className="mt-14 mb-14 flex flex-col sm:flex-row items-center justify-center gap-4 rounded-3xl sm:rounded-full border border-black/[0.06] bg-black/[0.02] px-8 py-6 sm:py-3.5 text-xs font-mono tracking-[0.15em] uppercase text-black/30 backdrop-blur-sm">
           <span className="text-[#1A1A1A] font-bold">Create Project</span>
-          <span>—</span>
+          <span className="hidden sm:inline">—</span>
           <span className="text-[#1A1A1A] font-bold">Upload Files</span>
-          <span>—</span>
+          <span className="hidden sm:inline">—</span>
           <span className="text-[#1A1A1A] font-bold">Generate QR Codes</span>
         </div>
 
