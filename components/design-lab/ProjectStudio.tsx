@@ -135,29 +135,36 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
   };
 
   const getQRLabelData = (): QRLabelData[] => {
-    return projectFiles.map((file) => {
+    const labels: (QRLabelData | null)[] = projectFiles.map((file) => {
       if (!file.qrUniqueId) {
-        console.warn(`QR unavailable for file ${file.id}. Missing qrUniqueId.`);
+        // Log the exact file that is missing its QR ID — never fabricate a substitute
+        console.error(`[QR INTEGRITY] qrUniqueId is missing for file id=${file.id} name="${file.name}". This file will be excluded from QR labels.`);
+        return null;
       }
       return {
         machineName: file.projectName,
         fileName: file.name,
-        qrUniqueId: file.qrUniqueId || '',
+        qrUniqueId: file.qrUniqueId,
         expiryDate: file.expiryDate,
         generatedDate: new Date().toISOString(),
-        status: file.status === "Active" ? "pass" : "needs_attention",
-        qrDataUrl: file.qrUniqueId ? `https://api.qrserver.com/v1/create-qr-code/?size=512&data=https://projectqr.app/scan/${file.qrUniqueId}` : '',
+        status: (file.status === "Active" ? "pass" : "needs_attention") as "pass" | "needs_attention",
+        qrDataUrl: `https://api.qrserver.com/v1/create-qr-code/?size=512&data=https://projectqr.app/scan/${file.qrUniqueId}`,
       };
     });
+    return labels.filter((label): label is QRLabelData => label !== null);
   };
 
   const generatePDFBlob = async (layout: QRLayout) => {
+    const labels = getQRLabelData();
+    if (labels.length === 0) {
+      throw new Error('No files have a valid QR code. Generate QR codes before downloading labels.');
+    }
+
     const [{ pdf }, { QRLabelPDF }] = await Promise.all([
       import("@react-pdf/renderer"),
       import("@/components/pdf/QRLabelPDF"),
     ]);
 
-    const labels = getQRLabelData();
     const blob = await pdf(<QRLabelPDF labels={labels} layout={layout} />).toBlob();
     return blob;
   };

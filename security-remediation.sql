@@ -74,14 +74,32 @@ WITH CHECK (
   )
 );
 
--- QR_CODES: Direct ownership via user_id column
--- Allows authenticated users to SELECT, INSERT, UPDATE, DELETE only their own QR codes
+-- QR_CODES: Dual ownership check
+-- Primary: direct ownership via user_id column
+-- Fallback: relational ownership via file_id → files → reports.user_id
+--           (covers edge cases where user_id was null due to schema version)
 CREATE POLICY "Allow users to manage their own QR codes"
 ON qr_codes
 FOR ALL
 TO authenticated
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
+USING (
+  auth.uid() = user_id
+  OR EXISTS (
+    SELECT 1 FROM files
+    INNER JOIN reports ON reports.id = files.report_id
+    WHERE files.id = qr_codes.file_id
+    AND reports.user_id = auth.uid()
+  )
+)
+WITH CHECK (
+  auth.uid() = user_id
+  OR EXISTS (
+    SELECT 1 FROM files
+    INNER JOIN reports ON reports.id = files.report_id
+    WHERE files.id = qr_codes.file_id
+    AND reports.user_id = auth.uid()
+  )
+);
 
 -- SCAN_LOGS: Relational ownership through qr_codes.user_id
 -- Scan logs do not have a direct user_id; ownership is verified by joining to qr_codes
