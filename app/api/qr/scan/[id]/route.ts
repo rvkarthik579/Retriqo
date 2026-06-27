@@ -27,13 +27,6 @@ export async function POST(
     const supabase = createSupabaseAdminClient()
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
     const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'unknown'
-    
-    console.log('\n--- SCAN API DIAGNOSTIC ---')
-    console.log('Received qrUniqueId:', qrUniqueId)
-    console.log('Supabase URL:', supabaseUrl)
-    console.log('Project Reference:', projectRef)
-    console.log('Environment:', process.env.NODE_ENV)
-    console.log('---------------------------')
 
     // Fetch QR code record first. Do not let embedded relationship errors mask QR existence.
     const { data: qr, error: qrError } = await supabase
@@ -42,27 +35,11 @@ export async function POST(
         id, qr_unique_id, password_hash, expiry_date, next_inspection_date,
         show_company, show_uploader_name, show_next_inspection, is_active,
         failed_pin_attempts, locked_until,
-        files(id, file_name, file_path, file_size, file_type)
+        files(id, file_name, file_path, file_size, file_type, report_id)
       `)
       .eq('qr_unique_id', qrUniqueId)
       .single()
-
-    console.log('--- POST-QUERY RESULT ---')
-    console.log('qrError:', JSON.stringify(qrError, null, 2))
-    console.log('Returned row (nested):', qr ? 'Found' : 'Null')
-    console.log('Full PostgREST error:', qrError ? JSON.stringify(qrError) : 'None')
-
-    // Second test query
-    const { data: simpleData, error: simpleError } = await supabase
-      .from("qr_codes")
-      .select("id, qr_unique_id")
-      .eq("qr_unique_id", qrUniqueId)
     
-    console.log('--- SIMPLE QUERY RESULT ---')
-    console.log('Simple query data:', JSON.stringify(simpleData))
-    console.log('Simple query error:', JSON.stringify(simpleError))
-    console.log('---------------------------\n')
-
     if (qrError || !qr) {
       await logScan(supabase, null, ip, deviceType, true, 'QR_NOT_FOUND')
       return NextResponse.json({ status: 'error', message: 'QR code not found.' }, { status: 404 })
@@ -135,31 +112,17 @@ export async function POST(
       }
     }
 
-    interface FileRow { id: string; file_name: string; file_path: string; file_size: number; file_type: string }
+    interface FileRow { id: string; file_name: string; file_path: string; file_size: number; file_type: string; report_id: string }
 
     const file = Array.isArray(qr.files) ? qr.files[0] as unknown as FileRow : qr.files as unknown as FileRow
-    console.log('Resolved file row:', JSON.stringify({
-      id: file?.id,
-      file_name: file?.file_name,
-      file_path: file?.file_path,
-      file_size: file?.file_size,
-      file_type: file?.file_type,
-      objectType: file?.constructor?.name,
-    }))
 
     const { data: report, error: reportError } = await supabase
       .from('reports')
       .select('id, status, remarks, created_at, project_id')
-      .eq('file_id', file?.id)
+      .eq('id', file?.report_id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-
-    console.log('Report lookup:', JSON.stringify({
-      file_id: file?.id,
-      report,
-      reportError,
-    }))
 
     const { data: project, error: projectError } = report?.project_id
       ? await supabase
@@ -169,49 +132,33 @@ export async function POST(
           .maybeSingle()
       : { data: null, error: null }
 
-    console.log('Project lookup:', JSON.stringify({
-      project_id: report?.project_id,
-      project,
-      projectError,
-    }))
-
-    const { data: user, error: userError } = project?.user_id
-      ? await supabase
-          .from('users')
-          .select('name, company_name')
-          .eq('id', project.user_id)
-          .maybeSingle()
-      : { data: null, error: null }
-
-    console.log('User lookup:', JSON.stringify({
-      user_id: project?.user_id,
-      userFound: !!user,
-      userError,
-    }))
+    let user = null;
+    if (project?.user_id) {
+      const { data: u, error: uError } = await supabase
+        .from('users')
+        .select('name, company_name')
+        .eq('id', project.user_id)
+        .maybeSingle()
+      
+      if (uError) {
+        if (uError.code === '42501') {
+          console.warn('User lookup failed due to RLS/permissions (42501). Continuing without user data.')
+        } else {
+          console.error('User lookup error:', uError)
+        }
+      } else {
+        user = u
+      }
+    }
 
     // Get file URL via signed URL
-    const { data: urlData, error: signedUrlError } = await supabase.storage
+    const { data: urlData } = await supabase.storage
       .from('project-qr-files')
       .createSignedUrl(file?.file_path ?? '', 300)
-
-    console.log('Signed URL lookup:', JSON.stringify({
-      bucket: 'project-qr-files',
-      path: file?.file_path,
-      hasSignedUrl: !!urlData?.signedUrl,
-      signedUrlError,
-    }))
 
     const { data: downloadUrlData, error: downloadUrlError } = await supabase.storage
       .from('project-qr-files')
       .createSignedUrl(file?.file_path ?? '', 300, { download: file?.file_name || true })
-
-    console.log('Download signed URL lookup:', JSON.stringify({
-      bucket: 'project-qr-files',
-      path: file?.file_path,
-      download: file?.file_name || true,
-      hasSignedUrl: !!downloadUrlData?.signedUrl,
-      downloadUrlError,
-    }))
 
     // Success — extract data
     await logScan(supabase, qr.id, ip, deviceType, false, null)
