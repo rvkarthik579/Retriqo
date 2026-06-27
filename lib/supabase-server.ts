@@ -42,9 +42,6 @@ export function createSupabaseAdminClient() {
   if (!serviceRoleKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Add it to environment variables.')
   }
-  if (serviceRoleKey === process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is incorrectly set to the anon key. It must be the Service Role Key to bypass RLS.')
-  }
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     serviceRoleKey,

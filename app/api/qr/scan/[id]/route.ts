@@ -25,6 +25,15 @@ export async function POST(
   try {
     // Use admin client to bypass RLS — this route serves unauthenticated public users
     const supabase = createSupabaseAdminClient()
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const projectRef = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/)?.[1] || 'unknown'
+    
+    console.log('\n--- SCAN API DIAGNOSTIC ---')
+    console.log('Received qrUniqueId:', qrUniqueId)
+    console.log('Supabase URL:', supabaseUrl)
+    console.log('Project Reference:', projectRef)
+    console.log('Environment:', process.env.NODE_ENV)
+    console.log('---------------------------')
 
     // Fetch QR code record
     const { data: qr, error: qrError } = await supabase
@@ -43,6 +52,22 @@ export async function POST(
       `)
       .eq('qr_unique_id', qrUniqueId)
       .single()
+
+    console.log('--- POST-QUERY RESULT ---')
+    console.log('qrError:', JSON.stringify(qrError, null, 2))
+    console.log('Returned row (nested):', qr ? 'Found' : 'Null')
+    console.log('Full PostgREST error:', qrError ? JSON.stringify(qrError) : 'None')
+
+    // Second test query
+    const { data: simpleData, error: simpleError } = await supabase
+      .from("qr_codes")
+      .select("id, qr_unique_id")
+      .eq("qr_unique_id", qrUniqueId)
+    
+    console.log('--- SIMPLE QUERY RESULT ---')
+    console.log('Simple query data:', JSON.stringify(simpleData))
+    console.log('Simple query error:', JSON.stringify(simpleError))
+    console.log('---------------------------\n')
 
     if (qrError || !qr) {
       await logScan(supabase, null, ip, deviceType, true, 'QR_NOT_FOUND')
@@ -124,7 +149,7 @@ export async function POST(
     interface ProjectRow { machine_name: string; user_id: string; users: UserRow[] }
     interface UserRow { name?: string; company_name?: string }
 
-    const file = qr.files as unknown as FileRow
+    const file = Array.isArray(qr.files) ? qr.files[0] as unknown as FileRow : qr.files as unknown as FileRow
     const report = Array.isArray(file?.reports) ? file.reports[0] as ReportRow : file?.reports as ReportRow
     const project = Array.isArray(report?.projects) ? report.projects[0] as ProjectRow : report?.projects as ProjectRow
     const user = Array.isArray(project?.users) ? project.users[0] as UserRow : project?.users as UserRow
@@ -134,11 +159,16 @@ export async function POST(
       .from('project-qr-files')
       .createSignedUrl(file?.file_path ?? '', 300)
 
+    const { data: downloadUrlData } = await supabase.storage
+      .from('project-qr-files')
+      .createSignedUrl(file?.file_path ?? '', 300, { download: file?.file_name || true })
+
     return NextResponse.json({
       status: 'valid',
       data: {
         fileName: file?.file_name,
         fileUrl: urlData?.signedUrl,
+        downloadUrl: downloadUrlData?.signedUrl || urlData?.signedUrl,
         fileSize: file?.file_size,
         status: (report?.status as string) || 'pass',
         machineName: project?.machine_name || 'Unknown Machine',

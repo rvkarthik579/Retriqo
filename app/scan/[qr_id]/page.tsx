@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 interface QRData {
   fileName: string
   fileUrl: string
+  downloadUrl?: string
   fileSize: number
   status: string
   machineName: string
@@ -477,7 +478,7 @@ export default function ScanPage({ params }: { params: { qr_id: string } }) {
               </button>
               
               <a
-                href={qrData.fileUrl}
+                href={qrData.downloadUrl || qrData.fileUrl}
                 download={qrData.fileName}
                 style={{
                   width: '100%', padding: '18px',
