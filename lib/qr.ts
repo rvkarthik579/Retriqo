@@ -24,7 +24,7 @@ export function generateQRId(): string {
  */
 export function buildScanUrl(qrUniqueId: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-    (typeof window !== 'undefined' ? window.location.origin : 'https://project-qr.vercel.app')
+    (typeof window !== 'undefined' ? window.location.origin : '')
   return `${baseUrl}/scan/${qrUniqueId}`
 }
 

@@ -173,7 +173,10 @@ export default function FileDetailPanel({ file, onClose, onDelete }: FileDetailP
                   className="h-full w-full"
                 />
               ) : (
-                <QrCode className="h-full w-full text-black/20" strokeWidth={0.75} />
+                <div className="flex flex-col items-center justify-center h-full w-full text-black/40 text-center">
+                  <QrCode className="h-8 w-8 mb-2 opacity-50" strokeWidth={1} />
+                  <span className="font-mono text-[10px] uppercase tracking-widest font-bold">QR Unavailable</span>
+                </div>
               )}
             </div>
             <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-widest text-black/30">

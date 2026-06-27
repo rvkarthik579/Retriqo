@@ -148,7 +148,7 @@ export default function ProjectStudio({ project, onClose }: ProjectStudioProps) 
         expiryDate: file.expiryDate,
         generatedDate: new Date().toISOString(),
         status: (file.status === "Active" ? "pass" : "needs_attention") as "pass" | "needs_attention",
-        qrDataUrl: `https://api.qrserver.com/v1/create-qr-code/?size=512&data=https://projectqr.app/scan/${file.qrUniqueId}`,
+        qrDataUrl: `https://api.qrserver.com/v1/create-qr-code/?size=512&data=${typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_APP_URL || ''}/scan/${file.qrUniqueId}`,
       };
     });
     return labels.filter((label): label is QRLabelData => label !== null);
