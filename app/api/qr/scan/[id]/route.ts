@@ -35,20 +35,14 @@ export async function POST(
     console.log('Environment:', process.env.NODE_ENV)
     console.log('---------------------------')
 
-    // Fetch QR code record
+    // Fetch QR code record first. Do not let embedded relationship errors mask QR existence.
     const { data: qr, error: qrError } = await supabase
       .from('qr_codes')
       .select(`
         id, qr_unique_id, password_hash, expiry_date, next_inspection_date,
         show_company, show_uploader_name, show_next_inspection, is_active,
         failed_pin_attempts, locked_until,
-        files(id, file_name, file_path, file_size, file_type,
-          reports(id, status, remarks, created_at, project_id,
-            projects(machine_name, user_id,
-              users(name, company_name)
-            )
-          )
-        )
+        files(id, file_name, file_path, file_size, file_type)
       `)
       .eq('qr_unique_id', qrUniqueId)
       .single()
@@ -88,7 +82,7 @@ export async function POST(
 
     // Check database-backed PIN lockout
     if (qr.locked_until && new Date(qr.locked_until) > new Date()) {
-      await logScan(supabase, qr.id, ip, deviceType, true, 'LOCKED_OUT')
+    await logScan(supabase, qr.id, ip, deviceType, true, 'LOCKED_OUT')
       const secondsRemaining = Math.ceil((new Date(qr.locked_until).getTime() - new Date().getTime()) / 1000)
       return NextResponse.json({ 
         status: 'locked', 
@@ -141,27 +135,86 @@ export async function POST(
       }
     }
 
-    // Success — extract data
-    await logScan(supabase, qr.id, ip, deviceType, false, null)
-
-    interface FileRow { id: string; file_name: string; file_path: string; file_size: number; file_type: string; reports: ReportRow[] }
-    interface ReportRow { id: string; status: string; remarks?: string; created_at: string; projects: ProjectRow[] }
-    interface ProjectRow { machine_name: string; user_id: string; users: UserRow[] }
-    interface UserRow { name?: string; company_name?: string }
+    interface FileRow { id: string; file_name: string; file_path: string; file_size: number; file_type: string }
 
     const file = Array.isArray(qr.files) ? qr.files[0] as unknown as FileRow : qr.files as unknown as FileRow
-    const report = Array.isArray(file?.reports) ? file.reports[0] as ReportRow : file?.reports as ReportRow
-    const project = Array.isArray(report?.projects) ? report.projects[0] as ProjectRow : report?.projects as ProjectRow
-    const user = Array.isArray(project?.users) ? project.users[0] as UserRow : project?.users as UserRow
+    console.log('Resolved file row:', JSON.stringify({
+      id: file?.id,
+      file_name: file?.file_name,
+      file_path: file?.file_path,
+      file_size: file?.file_size,
+      file_type: file?.file_type,
+      objectType: file?.constructor?.name,
+    }))
+
+    const { data: report, error: reportError } = await supabase
+      .from('reports')
+      .select('id, status, remarks, created_at, project_id')
+      .eq('file_id', file?.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    console.log('Report lookup:', JSON.stringify({
+      file_id: file?.id,
+      report,
+      reportError,
+    }))
+
+    const { data: project, error: projectError } = report?.project_id
+      ? await supabase
+          .from('projects')
+          .select('machine_name, user_id')
+          .eq('id', report.project_id)
+          .maybeSingle()
+      : { data: null, error: null }
+
+    console.log('Project lookup:', JSON.stringify({
+      project_id: report?.project_id,
+      project,
+      projectError,
+    }))
+
+    const { data: user, error: userError } = project?.user_id
+      ? await supabase
+          .from('users')
+          .select('name, company_name')
+          .eq('id', project.user_id)
+          .maybeSingle()
+      : { data: null, error: null }
+
+    console.log('User lookup:', JSON.stringify({
+      user_id: project?.user_id,
+      userFound: !!user,
+      userError,
+    }))
 
     // Get file URL via signed URL
-    const { data: urlData } = await supabase.storage
+    const { data: urlData, error: signedUrlError } = await supabase.storage
       .from('project-qr-files')
       .createSignedUrl(file?.file_path ?? '', 300)
 
-    const { data: downloadUrlData } = await supabase.storage
+    console.log('Signed URL lookup:', JSON.stringify({
+      bucket: 'project-qr-files',
+      path: file?.file_path,
+      hasSignedUrl: !!urlData?.signedUrl,
+      signedUrlError,
+    }))
+
+    const { data: downloadUrlData, error: downloadUrlError } = await supabase.storage
       .from('project-qr-files')
       .createSignedUrl(file?.file_path ?? '', 300, { download: file?.file_name || true })
+
+    console.log('Download signed URL lookup:', JSON.stringify({
+      bucket: 'project-qr-files',
+      path: file?.file_path,
+      download: file?.file_name || true,
+      hasSignedUrl: !!downloadUrlData?.signedUrl,
+      downloadUrlError,
+    }))
+
+    // Success — extract data
+    await logScan(supabase, qr.id, ip, deviceType, false, null)
 
     return NextResponse.json({
       status: 'valid',
