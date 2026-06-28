@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: '/',
       disallow: ['/dashboard/', '/design-lab/', '/scan/'],
     },
-    sitemap: 'https://project-qr.vercel.app/sitemap.xml',
+    sitemap: 'https://project-qr-xi.vercel.app/sitemap.xml',
   }
 }
