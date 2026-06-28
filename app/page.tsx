@@ -50,16 +50,16 @@ export default function LandingPage() {
         
         {/* HERO SECTION */}
         <section className="premium-hero">
-          <h1>End manual record-keeping.</h1>
+          <h1>Every Machine. Every Report. One Scan Away.</h1>
           <p className="hero-subtitle reveal-up delay-1">
-            Secure, time-locked asset documentation routed directly to the factory floor.<br/>
-            Scan once. Retrieve forever.
+            Securely store inspection reports, generate a unique QR code, and attach it to your equipment.<br/>
+            Instantly retrieve the machine's entire history with a single scan.
           </p>
           <div className="reveal-up delay-2" style={{ marginBottom: '2rem' }}>
             <Link href="/register" className="premium-btn premium-btn-primary" style={{ padding: '1rem 2rem', fontSize: '1rem' }}>Get Started</Link>
           </div>
           <div className="reveal-up delay-3" style={{ fontSize: '0.75rem', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem' }}>
-            Designed for Manufacturing • Energy • Logistics • Defense
+            Built for Manufacturing • Maintenance • Quality Control • Field Operations
           </div>
 
           {/* VISUAL SCHEMATIC */}
@@ -194,12 +194,12 @@ export default function LandingPage() {
         {/* CTA SECTION */}
         <section className="premium-section" style={{ textAlign: 'center', paddingBottom: '160px' }}>
           <div className="reveal-up">
-            <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>Replace paper with permanence.</h2>
+            <h2 className="section-title" style={{ marginBottom: '1.5rem' }}>Ready to digitize your factory floor?</h2>
             <p style={{ color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }}>
-              Create an account to begin attaching reports to physical assets.
+              Create a free account to start attaching reports to physical assets today.
             </p>
             <Link href="/register" className="premium-btn premium-btn-primary" style={{ padding: '1rem 2rem', fontSize: '1rem' }}>
-              Create Account
+              Get Started
             </Link>
           </div>
         </section>
