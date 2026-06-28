@@ -45,6 +45,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://project-qr-xi.vercel.app",
   },
+  verification: {
+    google: "rTKc-nOn3sAfDSlKgxMedPHrMMvpKJ4HvitXBpJGBKQ",
+  },
 };
 
 export default function RootLayout({
