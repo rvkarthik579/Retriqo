@@ -55,6 +55,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "Retriqo",
+              "operatingSystem": "Web",
+              "applicationCategory": "BusinessApplication",
+              "url": "https://project-qr-xi.vercel.app",
+              "description": "Retriqo helps industrial teams securely store inspection reports, generate QR codes, and instantly retrieve machine history with a single scan.",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              }
+            })
+          }}
+        />
         <script dangerouslySetInnerHTML={{
           __html: `
             if ('serviceWorker' in navigator) {
