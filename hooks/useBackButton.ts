@@ -9,6 +9,11 @@ import { useEffect, useRef } from 'react';
  */
 export function useBackButton(isOpen: boolean, onClose: () => void) {
   const isPoppedRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -19,7 +24,7 @@ export function useBackButton(isOpen: boolean, onClose: () => void) {
 
     const handlePopState = (e: PopStateEvent) => {
       isPoppedRef.current = true;
-      onClose();
+      onCloseRef.current();
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -34,5 +39,5 @@ export function useBackButton(isOpen: boolean, onClose: () => void) {
         window.history.go(-1);
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 }
